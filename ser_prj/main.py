@@ -9,7 +9,8 @@ import multiprocessing
 from multiprocessing import Pool,Process,Value,Array,Manager,Queue
 from enum import IntEnum
 import time
-
+from datetime import datetime
+from PyQt5.QtGui import QTextCursor
 
 #自定义信号量
 class UsartRec_UpdateLog(QObject):
@@ -123,6 +124,31 @@ def usart_setting(serial_cfg,serial_ctr,usart_workState,rx_data,tx_data):
  # 获取串口列表
 def Get_Com_List():
     return list(list_ports.comports()) 
+  
+  
+  
+def get_strTime():
+  curr_time = datetime.now()
+  hour = curr_time.hour
+  minute = curr_time.minute
+  second = curr_time.second
+  
+  if hour < 10:
+    strHour = '0' + str(hour)
+  else:
+    strHour = str(hour)
+      
+  if minute < 10:
+    strMinute = '0' + str(minute)
+  else:
+    strMinute = str(minute)
+    
+  if second < 10:
+    strSecond = '0' + str(second)
+  else:
+    strSecond = str(second)
+    
+  return strHour + ':' + strMinute + ':' + strSecond + '.' + (str(curr_time.microsecond))[:3]
 
 
 
@@ -186,6 +212,11 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       time.sleep(0.001)
 
 
+  def drag_scroll(self):
+    self.Data_Display.moveCursor(QTextCursor.End)  #数据刷新滚动条自动向下滚动
+
+
+
   #槽函数
   def send_data_click(self):
      print("点击了发送数据按钮")
@@ -199,9 +230,9 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     
     show_str = (' '.join([hex(x)[2:].zfill(2) for x in Data]))
     # show_str = str(Data, encoding="utf-8")
-    print("数据类型：",type(show_str))
-    show_str = show_str + "\n"
     
+    timeStr = get_strTime()
+    show_str = '[' + timeStr + ']' + "收←:" + show_str + '\n'
     self.Data_Display.insertPlainText(show_str)
 
 

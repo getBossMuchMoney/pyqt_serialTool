@@ -20,7 +20,9 @@ class Ui_MainWindow(object):
         self.Data_Display = QtWidgets.QTextEdit(self.centralwidget)
         self.Data_Display.setGeometry(QtCore.QRect(10, 20, 819, 419))
         self.Data_Display.setTextInteractionFlags(QtCore.Qt.TextSelectableByKeyboard|QtCore.Qt.TextSelectableByMouse)
+        self.Data_Display.setPlaceholderText("")
         self.Data_Display.setObjectName("Data_Display")
+        self.Data_Display.moveCursor
         self.label_2 = QtWidgets.QLabel(self.centralwidget)
         self.label_2.setGeometry(QtCore.QRect(10, 470, 69, 19))
         self.label_2.setObjectName("label_2")
@@ -51,9 +53,10 @@ class Ui_MainWindow(object):
         self.pushButton = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton.setGeometry(QtCore.QRect(750, 450, 75, 23))
         self.pushButton.setObjectName("pushButton")
-        self.checkBox = QtWidgets.QCheckBox(self.centralwidget)
-        self.checkBox.setGeometry(QtCore.QRect(840, 400, 81, 16))
-        self.checkBox.setObjectName("checkBox")
+        self.recHexShow = QtWidgets.QCheckBox(self.centralwidget)
+        self.recHexShow.setGeometry(QtCore.QRect(840, 400, 81, 16))
+        self.recHexShow.setTristate(False)
+        self.recHexShow.setObjectName("recHexShow")
         self.checkBox_2 = QtWidgets.QCheckBox(self.centralwidget)
         self.checkBox_2.setGeometry(QtCore.QRect(840, 500, 81, 16))
         self.checkBox_2.setObjectName("checkBox_2")
@@ -70,7 +73,7 @@ class Ui_MainWindow(object):
         self.Send_Data.clicked.connect(MainWindow.send_data_click) # type: ignore
         self.Open_Com.clicked.connect(MainWindow.open_com_click) # type: ignore
         self.pushButton.clicked.connect(self.Data_Display.clear) # type: ignore
-        self.pushButton.clicked.connect(self.Send_Data_Display.clear) # type: ignore
+        self.Data_Display.textChanged.connect(MainWindow.drag_scroll) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -83,5 +86,5 @@ class Ui_MainWindow(object):
         self.label_3.setText(_translate("MainWindow", "串口号"))
         self.Open_Com.setText(_translate("MainWindow", "打开串口"))
         self.pushButton.setText(_translate("MainWindow", "清空窗口"))
-        self.checkBox.setText(_translate("MainWindow", "Hex显示"))
+        self.recHexShow.setText(_translate("MainWindow", "Hex显示"))
         self.checkBox_2.setText(_translate("MainWindow", "Hex发送"))
