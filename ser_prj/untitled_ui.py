@@ -52,7 +52,7 @@ class Ui_MainWindow(object):
         self.pushButton.setGeometry(QtCore.QRect(750, 450, 75, 23))
         self.pushButton.setObjectName("pushButton")
         self.checkBox = QtWidgets.QCheckBox(self.centralwidget)
-        self.checkBox.setGeometry(QtCore.QRect(840, 400, 81, 16))
+        self.checkBox.setGeometry(QtCore.QRect(840, 410, 81, 16))
         self.checkBox.setObjectName("checkBox")
         self.checkBox_2 = QtWidgets.QCheckBox(self.centralwidget)
         self.checkBox_2.setGeometry(QtCore.QRect(840, 500, 81, 16))
