@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'd:\github_prj\pyqt_serialTool\ser_prj\untitled.ui'
+# Form implementation generated from reading ui file 'e:\gitHub_prj\pyqt_serialTool\ser_prj\untitled.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.9
 #
@@ -19,7 +19,7 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName("centralwidget")
         self.Data_Display = QtWidgets.QTextEdit(self.centralwidget)
         self.Data_Display.setGeometry(QtCore.QRect(10, 20, 819, 419))
-        self.Data_Display.setTextInteractionFlags(QtCore.Qt.TextSelectableByKeyboard|QtCore.Qt.TextSelectableByMouse)
+        self.Data_Display.setTextInteractionFlags(QtCore.Qt.NoTextInteraction)
         self.Data_Display.setPlaceholderText("")
         self.Data_Display.setObjectName("Data_Display")
         self.label_2 = QtWidgets.QLabel(self.centralwidget)
@@ -63,7 +63,7 @@ class Ui_MainWindow(object):
         self.sendHex.setObjectName("sendHex")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1137, 26))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1137, 23))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)

@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="textInteractionFlags">
-     <set>Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+     <set>Qt::NoTextInteraction</set>
     </property>
     <property name="placeholderText">
      <string/>
@@ -193,7 +193,7 @@
      <x>0</x>
      <y>0</y>
      <width>1137</width>
-     <height>26</height>
+     <height>23</height>
     </rect>
    </property>
   </widget>

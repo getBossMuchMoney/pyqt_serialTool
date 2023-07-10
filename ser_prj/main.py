@@ -223,7 +223,8 @@ class Mywindow(QMainWindow, Ui_MainWindow):
      if dlen>0:
       timeStr = get_strTime()  
       if self.sendHex.isChecked():
-        {}
+        print("原始发送数据：",Data_Need_Send)
+       
         
       else:
         show_str = '[' + timeStr + ']' + "发→:" + Data_Need_Send + '\n'
