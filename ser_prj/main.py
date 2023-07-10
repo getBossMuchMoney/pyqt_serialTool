@@ -67,7 +67,6 @@ def rec_deal(recClose_event,rx_data):
       break
     data = sSerial.read_all()
     if len(data)>0:
-      print("已收到数据：",data)
       rx_data.put(data)
 
     time.sleep(0.001)  #降低cpu占用率
@@ -219,17 +218,28 @@ class Mywindow(QMainWindow, Ui_MainWindow):
 
   #槽函数
   def send_data_click(self):
-     print("点击了发送数据按钮")
      Data_Need_Send = self.Send_Data_Display.toPlainText()
      dlen = len(Data_Need_Send)
-     if dlen>0:      
-      tx_data.put(Data_Need_Send.encode("gbk"))
+     if dlen>0:
+      timeStr = get_strTime()  
+      if self.sendHex.isChecked():
+        {}
+        
+      else:
+        show_str = '[' + timeStr + ']' + "发→:" + Data_Need_Send + '\n'
+        self.Data_Display.insertPlainText(show_str)
+        tx_data.put(Data_Need_Send.encode("gbk"))
+        
 
 
   def Set_Display_Data(self, Data):
-    
-    show_str = (' '.join([hex(x)[2:].zfill(2) for x in Data]))
-    # show_str = str(Data, encoding="utf-8")
+    if self.recHexShow.isChecked():
+      show_str = (' '.join([hex(x)[2:].zfill(2) for x in Data]))
+    else:
+      try:
+        show_str = str(Data, encoding="gbk")
+      except:
+        show_str = (''.join('?' for x in Data))
     
     timeStr = get_strTime()
     show_str = '[' + timeStr + ']' + "收←:" + show_str + '\n'
