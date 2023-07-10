@@ -22,7 +22,6 @@ class Ui_MainWindow(object):
         self.Data_Display.setTextInteractionFlags(QtCore.Qt.TextSelectableByKeyboard|QtCore.Qt.TextSelectableByMouse)
         self.Data_Display.setPlaceholderText("")
         self.Data_Display.setObjectName("Data_Display")
-        self.Data_Display.moveCursor
         self.label_2 = QtWidgets.QLabel(self.centralwidget)
         self.label_2.setGeometry(QtCore.QRect(10, 470, 69, 19))
         self.label_2.setObjectName("label_2")
