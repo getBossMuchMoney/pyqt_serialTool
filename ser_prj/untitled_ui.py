@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'e:\tooltest_py\serialProject\untitled.ui'
+# Form implementation generated from reading ui file 'd:\github_prj\pyqt_serialTool\ser_prj\untitled.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.9
 #
@@ -52,14 +52,14 @@ class Ui_MainWindow(object):
         self.pushButton.setGeometry(QtCore.QRect(750, 450, 75, 23))
         self.pushButton.setObjectName("pushButton")
         self.checkBox = QtWidgets.QCheckBox(self.centralwidget)
-        self.checkBox.setGeometry(QtCore.QRect(840, 400, 71, 16))
+        self.checkBox.setGeometry(QtCore.QRect(840, 400, 81, 16))
         self.checkBox.setObjectName("checkBox")
         self.checkBox_2 = QtWidgets.QCheckBox(self.centralwidget)
-        self.checkBox_2.setGeometry(QtCore.QRect(840, 500, 71, 16))
+        self.checkBox_2.setGeometry(QtCore.QRect(840, 500, 81, 16))
         self.checkBox_2.setObjectName("checkBox_2")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1137, 23))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1137, 26))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
