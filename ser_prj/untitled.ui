@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>serial_tool</string>
+   <string>串口助手beta版</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QTextEdit" name="Data_Display">
@@ -193,7 +193,7 @@
      <x>0</x>
      <y>0</y>
      <width>1137</width>
-     <height>23</height>
+     <height>26</height>
     </rect>
    </property>
   </widget>

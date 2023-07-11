@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'e:\gitHub_prj\pyqt_serialTool\ser_prj\untitled.ui'
+# Form implementation generated from reading ui file 'd:\github_prj\pyqt_serialTool\ser_prj\untitled.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.9
 #
@@ -63,7 +63,7 @@ class Ui_MainWindow(object):
         self.sendHex.setObjectName("sendHex")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1137, 23))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1137, 26))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
@@ -79,7 +79,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "serial_tool"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "串口助手beta版"))
         self.label_2.setText(_translate("MainWindow", "发送窗口"))
         self.Send_Data.setText(_translate("MainWindow", "发送数据"))
         self.label.setText(_translate("MainWindow", "数据窗口"))
