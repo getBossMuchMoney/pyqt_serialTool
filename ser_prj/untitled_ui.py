@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'd:\github_prj\pyqt_serialTool\ser_prj\untitled.ui'
+# Form implementation generated from reading ui file 'e:\gitHub_prj\pyqt_serialTool\ser_prj\untitled.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.9
 #
@@ -14,22 +14,22 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1137, 710)
+        MainWindow.resize(1160, 705)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.Data_Display = QtWidgets.QTextEdit(self.centralwidget)
-        self.Data_Display.setGeometry(QtCore.QRect(10, 20, 819, 419))
+        self.Data_Display.setGeometry(QtCore.QRect(10, 20, 819, 491))
         self.Data_Display.setTextInteractionFlags(QtCore.Qt.NoTextInteraction)
         self.Data_Display.setPlaceholderText("")
         self.Data_Display.setObjectName("Data_Display")
         self.label_2 = QtWidgets.QLabel(self.centralwidget)
-        self.label_2.setGeometry(QtCore.QRect(10, 470, 69, 19))
+        self.label_2.setGeometry(QtCore.QRect(10, 520, 69, 19))
         self.label_2.setObjectName("label_2")
         self.Send_Data = QtWidgets.QPushButton(self.centralwidget)
-        self.Send_Data.setGeometry(QtCore.QRect(10, 610, 93, 28))
+        self.Send_Data.setGeometry(QtCore.QRect(10, 630, 93, 28))
         self.Send_Data.setObjectName("Send_Data")
         self.Send_Data_Display = QtWidgets.QTextEdit(self.centralwidget)
-        self.Send_Data_Display.setGeometry(QtCore.QRect(10, 490, 819, 109))
+        self.Send_Data_Display.setGeometry(QtCore.QRect(10, 548, 819, 71))
         self.Send_Data_Display.setObjectName("Send_Data_Display")
         self.label = QtWidgets.QLabel(self.centralwidget)
         self.label.setGeometry(QtCore.QRect(10, 0, 69, 19))
@@ -50,20 +50,23 @@ class Ui_MainWindow(object):
         self.Open_Com.setGeometry(QtCore.QRect(840, 100, 93, 28))
         self.Open_Com.setObjectName("Open_Com")
         self.pushButton = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton.setGeometry(QtCore.QRect(750, 450, 75, 23))
+        self.pushButton.setGeometry(QtCore.QRect(650, 520, 75, 23))
         self.pushButton.setObjectName("pushButton")
         self.recHexShow = QtWidgets.QCheckBox(self.centralwidget)
-        self.recHexShow.setGeometry(QtCore.QRect(840, 400, 81, 16))
+        self.recHexShow.setGeometry(QtCore.QRect(840, 500, 81, 16))
         self.recHexShow.setChecked(True)
         self.recHexShow.setTristate(False)
         self.recHexShow.setObjectName("recHexShow")
         self.sendHex = QtWidgets.QCheckBox(self.centralwidget)
-        self.sendHex.setGeometry(QtCore.QRect(840, 500, 81, 16))
+        self.sendHex.setGeometry(QtCore.QRect(840, 550, 81, 16))
         self.sendHex.setChecked(False)
         self.sendHex.setObjectName("sendHex")
+        self.pushButton_2 = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButton_2.setGeometry(QtCore.QRect(750, 520, 75, 23))
+        self.pushButton_2.setObjectName("pushButton_2")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1137, 26))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1160, 23))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
@@ -75,6 +78,7 @@ class Ui_MainWindow(object):
         self.Open_Com.clicked.connect(MainWindow.open_com_click) # type: ignore
         self.pushButton.clicked.connect(self.Data_Display.clear) # type: ignore
         self.Data_Display.textChanged.connect(MainWindow.drag_scroll) # type: ignore
+        self.pushButton_2.clicked.connect(self.Send_Data_Display.clear) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -86,6 +90,7 @@ class Ui_MainWindow(object):
         self.label_4.setText(_translate("MainWindow", "波特率"))
         self.label_3.setText(_translate("MainWindow", "串口号"))
         self.Open_Com.setText(_translate("MainWindow", "打开串口"))
-        self.pushButton.setText(_translate("MainWindow", "清空窗口"))
+        self.pushButton.setText(_translate("MainWindow", "清接收区"))
         self.recHexShow.setText(_translate("MainWindow", "Hex显示"))
         self.sendHex.setText(_translate("MainWindow", "Hex发送"))
+        self.pushButton_2.setText(_translate("MainWindow", "清发送区"))
