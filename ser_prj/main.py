@@ -9,7 +9,8 @@ import multiprocessing
 from multiprocessing import Pool,Process,Value,Array,Manager,Queue
 from enum import IntEnum
 import time
-
+from datetime import datetime
+from PyQt5.QtGui import QTextCursor
 
 #自定义信号量
 class UsartRec_UpdateLog(QObject):
@@ -66,7 +67,6 @@ def rec_deal(recClose_event,rx_data):
       break
     data = sSerial.read_all()
     if len(data)>0:
-      print("已收到数据：",data)
       rx_data.put(data)
 
     time.sleep(0.001)  #降低cpu占用率
@@ -123,8 +123,43 @@ def usart_setting(serial_cfg,serial_ctr,usart_workState,rx_data,tx_data):
  # 获取串口列表
 def Get_Com_List():
     return list(list_ports.comports()) 
+  
+  
+  
+def get_strTime():
+  curr_time = datetime.now()
+  hour = curr_time.hour
+  minute = curr_time.minute
+  second = curr_time.second
+  
+  if hour < 10:
+    strHour = '0' + str(hour)
+  else:
+    strHour = str(hour)
+      
+  if minute < 10:
+    strMinute = '0' + str(minute)
+  else:
+    strMinute = str(minute)
+    
+  if second < 10:
+    strSecond = '0' + str(second)
+  else:
+    strSecond = str(second)
+    
+  return strHour + ':' + strMinute + ':' + strSecond + '.' + (str(curr_time.microsecond))[:3]
 
 
+ #字节串转整形列表
+def bytesrialtoarray(msg):
+    data = []
+    buf = [hex(x) for x in bytes(msg)]
+    for i in range(len(buf)):
+        data.append(int(buf[i],16))
+        
+    return data
+  
+  
 
 class Mywindow(QMainWindow, Ui_MainWindow):
   def __init__(self):
@@ -186,22 +221,69 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       time.sleep(0.001)
 
 
+  def drag_scroll(self):
+    self.Data_Display.moveCursor(QTextCursor.End)  #数据刷新滚动条自动向下滚动
+
+
+
   #槽函数
   def send_data_click(self):
-     print("点击了发送数据按钮")
      Data_Need_Send = self.Send_Data_Display.toPlainText()
      dlen = len(Data_Need_Send)
-     if dlen>0:      
-      tx_data.put(Data_Need_Send.encode("gbk"))
+     if dlen>0:
+      timeStr = get_strTime()  
+      if self.sendHex.isChecked():        
+        Data_Need_Send = Data_Need_Send.replace(" ", "")  # 删除空格
+              
+        try:
+          Data_Need_Send = bytes.fromhex(Data_Need_Send)
+          Data_T =  bytesrialtoarray(Data_Need_Send)
+          tx_data.put(Data_T)     
+          if self.recHexShow.isChecked():
+            show_str = (' '.join([hex(x)[2:].zfill(2) for x in Data_Need_Send]))
+          else:
+            try:
+              show_str = str(Data_Need_Send, encoding="gbk")
+            except:
+              show_str = (''.join('?' for x in Data_Need_Send))
+              
+          show_str = '[' + timeStr + ']' + "发→◇" + show_str + '\n'
+          self.Data_Display.insertPlainText(show_str)
+            
+        except:
+          self.Data_Display.insertPlainText("数据格式错误,请检查格式!\n")
+      
+               
+      else:
+        tx_data.put(Data_Need_Send.encode("gbk"))  #发送
+        
+        if self.recHexShow.isChecked():
+          show_str = Data_Need_Send.encode('utf-8').hex()
+          show_str = bytes.fromhex(show_str)
+          show_str = (' '.join([hex(x)[2:].zfill(2) for x in show_str]))
+        else:
+          show_str = Data_Need_Send
+                         
+        show_str = '[' + timeStr + ']' + "发→◇" + show_str + '\n'       
+        self.Data_Display.insertPlainText(show_str)  
+        
+          
+          
+        
+        
 
 
   def Set_Display_Data(self, Data):
+    if self.recHexShow.isChecked():
+      show_str = (' '.join([hex(x)[2:].zfill(2) for x in Data]))
+    else:
+      try:
+        show_str = str(Data, encoding="gbk")
+      except:
+        show_str = (''.join('?' for x in Data))
     
-    show_str = (' '.join([hex(x)[2:].zfill(2) for x in Data]))
-    # show_str = str(Data, encoding="utf-8")
-    print("数据类型：",type(show_str))
-    show_str = show_str + "\n"
-    
+    timeStr = get_strTime()
+    show_str = '[' + timeStr + ']' + "收←◆" + show_str + '\n'
     self.Data_Display.insertPlainText(show_str)
 
 

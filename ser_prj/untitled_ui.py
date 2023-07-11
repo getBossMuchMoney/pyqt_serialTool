@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'e:\tooltest_py\serialProject\untitled.ui'
+# Form implementation generated from reading ui file 'd:\github_prj\pyqt_serialTool\ser_prj\untitled.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.9
 #
@@ -19,7 +19,8 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName("centralwidget")
         self.Data_Display = QtWidgets.QTextEdit(self.centralwidget)
         self.Data_Display.setGeometry(QtCore.QRect(10, 20, 819, 419))
-        self.Data_Display.setTextInteractionFlags(QtCore.Qt.TextSelectableByKeyboard|QtCore.Qt.TextSelectableByMouse)
+        self.Data_Display.setTextInteractionFlags(QtCore.Qt.NoTextInteraction)
+        self.Data_Display.setPlaceholderText("")
         self.Data_Display.setObjectName("Data_Display")
         self.label_2 = QtWidgets.QLabel(self.centralwidget)
         self.label_2.setGeometry(QtCore.QRect(10, 470, 69, 19))
@@ -51,15 +52,18 @@ class Ui_MainWindow(object):
         self.pushButton = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton.setGeometry(QtCore.QRect(750, 450, 75, 23))
         self.pushButton.setObjectName("pushButton")
-        self.checkBox = QtWidgets.QCheckBox(self.centralwidget)
-        self.checkBox.setGeometry(QtCore.QRect(840, 400, 71, 16))
-        self.checkBox.setObjectName("checkBox")
-        self.checkBox_2 = QtWidgets.QCheckBox(self.centralwidget)
-        self.checkBox_2.setGeometry(QtCore.QRect(840, 500, 71, 16))
-        self.checkBox_2.setObjectName("checkBox_2")
+        self.recHexShow = QtWidgets.QCheckBox(self.centralwidget)
+        self.recHexShow.setGeometry(QtCore.QRect(840, 400, 81, 16))
+        self.recHexShow.setChecked(True)
+        self.recHexShow.setTristate(False)
+        self.recHexShow.setObjectName("recHexShow")
+        self.sendHex = QtWidgets.QCheckBox(self.centralwidget)
+        self.sendHex.setGeometry(QtCore.QRect(840, 500, 81, 16))
+        self.sendHex.setChecked(False)
+        self.sendHex.setObjectName("sendHex")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1137, 23))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1137, 26))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
@@ -70,12 +74,12 @@ class Ui_MainWindow(object):
         self.Send_Data.clicked.connect(MainWindow.send_data_click) # type: ignore
         self.Open_Com.clicked.connect(MainWindow.open_com_click) # type: ignore
         self.pushButton.clicked.connect(self.Data_Display.clear) # type: ignore
-        self.pushButton.clicked.connect(self.Send_Data_Display.clear) # type: ignore
+        self.Data_Display.textChanged.connect(MainWindow.drag_scroll) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "serial_tool"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "串口助手beta版"))
         self.label_2.setText(_translate("MainWindow", "发送窗口"))
         self.Send_Data.setText(_translate("MainWindow", "发送数据"))
         self.label.setText(_translate("MainWindow", "数据窗口"))
@@ -83,5 +87,5 @@ class Ui_MainWindow(object):
         self.label_3.setText(_translate("MainWindow", "串口号"))
         self.Open_Com.setText(_translate("MainWindow", "打开串口"))
         self.pushButton.setText(_translate("MainWindow", "清空窗口"))
-        self.checkBox.setText(_translate("MainWindow", "Hex显示"))
-        self.checkBox_2.setText(_translate("MainWindow", "Hex发送"))
+        self.recHexShow.setText(_translate("MainWindow", "Hex显示"))
+        self.sendHex.setText(_translate("MainWindow", "Hex发送"))

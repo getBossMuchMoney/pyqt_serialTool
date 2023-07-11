@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>serial_tool</string>
+   <string>串口助手beta版</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QTextEdit" name="Data_Display">
@@ -24,7 +24,10 @@
      </rect>
     </property>
     <property name="textInteractionFlags">
-     <set>Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+     <set>Qt::NoTextInteraction</set>
+    </property>
+    <property name="placeholderText">
+     <string/>
     </property>
    </widget>
    <widget class="QLabel" name="label_2">
@@ -148,30 +151,39 @@
      <string>清空窗口</string>
     </property>
    </widget>
-   <widget class="QCheckBox" name="checkBox">
+   <widget class="QCheckBox" name="recHexShow">
     <property name="geometry">
      <rect>
       <x>840</x>
       <y>400</y>
-      <width>71</width>
+      <width>81</width>
       <height>16</height>
      </rect>
     </property>
     <property name="text">
      <string>Hex显示</string>
     </property>
+    <property name="checked">
+     <bool>true</bool>
+    </property>
+    <property name="tristate">
+     <bool>false</bool>
+    </property>
    </widget>
-   <widget class="QCheckBox" name="checkBox_2">
+   <widget class="QCheckBox" name="sendHex">
     <property name="geometry">
      <rect>
       <x>840</x>
       <y>500</y>
-      <width>71</width>
+      <width>81</width>
       <height>16</height>
      </rect>
     </property>
     <property name="text">
      <string>Hex发送</string>
+    </property>
+    <property name="checked">
+     <bool>false</bool>
     </property>
    </widget>
   </widget>
@@ -181,7 +193,7 @@
      <x>0</x>
      <y>0</y>
      <width>1137</width>
-     <height>23</height>
+     <height>26</height>
     </rect>
    </property>
   </widget>
@@ -238,18 +250,18 @@
    </hints>
   </connection>
   <connection>
-   <sender>pushButton</sender>
-   <signal>clicked()</signal>
-   <receiver>Send_Data_Display</receiver>
-   <slot>clear()</slot>
+   <sender>Data_Display</sender>
+   <signal>textChanged()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>drag_scroll()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>773</x>
-     <y>484</y>
+     <x>405</x>
+     <y>250</y>
     </hint>
     <hint type="destinationlabel">
-     <x>673</x>
-     <y>519</y>
+     <x>432</x>
+     <y>478</y>
     </hint>
    </hints>
   </connection>
@@ -258,5 +270,6 @@
   <slot>cal_fuc()</slot>
   <slot>send_data_click()</slot>
   <slot>open_com_click()</slot>
+  <slot>drag_scroll()</slot>
  </slots>
 </ui>
