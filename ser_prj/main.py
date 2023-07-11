@@ -150,6 +150,16 @@ def get_strTime():
   return strHour + ':' + strMinute + ':' + strSecond + '.' + (str(curr_time.microsecond))[:3]
 
 
+ #字节串转整形列表
+def bytesrialtoarray(msg):
+    data = []
+    buf = [hex(x) for x in bytes(msg)]
+    for i in range(len(buf)):
+        data.append(int(buf[i],16))
+        
+    return data
+  
+  
 
 class Mywindow(QMainWindow, Ui_MainWindow):
   def __init__(self):
@@ -222,14 +232,44 @@ class Mywindow(QMainWindow, Ui_MainWindow):
      dlen = len(Data_Need_Send)
      if dlen>0:
       timeStr = get_strTime()  
-      if self.sendHex.isChecked():
-        print("原始发送数据：",Data_Need_Send)
-       
-        
+      if self.sendHex.isChecked():        
+        Data_Need_Send = Data_Need_Send.replace(" ", "")  # 删除空格
+              
+        try:
+          Data_Need_Send = bytes.fromhex(Data_Need_Send)
+          Data_T =  bytesrialtoarray(Data_Need_Send)
+          tx_data.put(Data_T)     
+          if self.recHexShow.isChecked():
+            show_str = (' '.join([hex(x)[2:].zfill(2) for x in Data_Need_Send]))
+          else:
+            try:
+              show_str = str(Data_Need_Send, encoding="gbk")
+            except:
+              show_str = (''.join('?' for x in Data_Need_Send))
+              
+          show_str = '[' + timeStr + ']' + "发→◇" + show_str + '\n'
+          self.Data_Display.insertPlainText(show_str)
+            
+        except:
+          self.Data_Display.insertPlainText("数据格式错误,请检查格式!\n")
+      
+               
       else:
-        show_str = '[' + timeStr + ']' + "发→:" + Data_Need_Send + '\n'
-        self.Data_Display.insertPlainText(show_str)
-        tx_data.put(Data_Need_Send.encode("gbk"))
+        tx_data.put(Data_Need_Send.encode("gbk"))  #发送
+        
+        if self.recHexShow.isChecked():
+          show_str = Data_Need_Send.encode('utf-8').hex()
+          show_str = bytes.fromhex(show_str)
+          show_str = (' '.join([hex(x)[2:].zfill(2) for x in show_str]))
+        else:
+          show_str = Data_Need_Send
+                         
+        show_str = '[' + timeStr + ']' + "发→◇" + show_str + '\n'       
+        self.Data_Display.insertPlainText(show_str)  
+        
+          
+          
+        
         
 
 
@@ -243,7 +283,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         show_str = (''.join('?' for x in Data))
     
     timeStr = get_strTime()
-    show_str = '[' + timeStr + ']' + "收←:" + show_str + '\n'
+    show_str = '[' + timeStr + ']' + "收←◆" + show_str + '\n'
     self.Data_Display.insertPlainText(show_str)
 
 
