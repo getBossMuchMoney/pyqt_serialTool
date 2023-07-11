@@ -2,7 +2,7 @@ import sys
 from serial import Serial
 from serial.tools import list_ports
 from threading import Thread,Event
-from PyQt5.QtWidgets import QApplication,QMainWindow
+from PyQt5.QtWidgets import QApplication,QMainWindow,QMessageBox
 from untitled_ui import Ui_MainWindow
 from PyQt5.QtCore import Qt,pyqtSignal,QObject
 import multiprocessing
@@ -251,7 +251,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
           self.Data_Display.insertPlainText(show_str)
             
         except:
-          self.Data_Display.insertPlainText("数据格式错误,请检查格式!\n")
+          QMessageBox.warning(None, "警告", "待发送数据格式错误！！！", QMessageBox.Ok)
       
                
       else:
