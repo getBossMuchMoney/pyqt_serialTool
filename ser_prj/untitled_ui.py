@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'e:\gitHub_prj\pyqt_serialTool\ser_prj\untitled.ui'
+# Form implementation generated from reading ui file 'd:\github_prj\pyqt_serialTool\ser_prj\untitled.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.9
 #
@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1160, 705)
+        MainWindow.resize(1160, 712)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.Data_Display = QtWidgets.QTextEdit(self.centralwidget)
@@ -47,11 +47,11 @@ class Ui_MainWindow(object):
         self.label_3.setGeometry(QtCore.QRect(840, 30, 49, 19))
         self.label_3.setObjectName("label_3")
         self.Open_Com = QtWidgets.QPushButton(self.centralwidget)
-        self.Open_Com.setGeometry(QtCore.QRect(840, 100, 93, 28))
+        self.Open_Com.setGeometry(QtCore.QRect(840, 170, 93, 28))
         self.Open_Com.setObjectName("Open_Com")
-        self.pushButton = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton.setGeometry(QtCore.QRect(650, 520, 75, 23))
-        self.pushButton.setObjectName("pushButton")
+        self.ClearRecShow = QtWidgets.QPushButton(self.centralwidget)
+        self.ClearRecShow.setGeometry(QtCore.QRect(650, 520, 75, 23))
+        self.ClearRecShow.setObjectName("ClearRecShow")
         self.recHexShow = QtWidgets.QCheckBox(self.centralwidget)
         self.recHexShow.setGeometry(QtCore.QRect(840, 500, 81, 16))
         self.recHexShow.setChecked(True)
@@ -61,12 +61,15 @@ class Ui_MainWindow(object):
         self.sendHex.setGeometry(QtCore.QRect(840, 550, 81, 16))
         self.sendHex.setChecked(False)
         self.sendHex.setObjectName("sendHex")
-        self.pushButton_2 = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton_2.setGeometry(QtCore.QRect(750, 520, 75, 23))
-        self.pushButton_2.setObjectName("pushButton_2")
+        self.ClearSendShow = QtWidgets.QPushButton(self.centralwidget)
+        self.ClearSendShow.setGeometry(QtCore.QRect(750, 520, 75, 23))
+        self.ClearSendShow.setObjectName("ClearSendShow")
+        self.ComReflash = QtWidgets.QPushButton(self.centralwidget)
+        self.ComReflash.setGeometry(QtCore.QRect(960, 170, 101, 28))
+        self.ComReflash.setObjectName("ComReflash")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1160, 23))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1160, 26))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
@@ -76,9 +79,9 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
         self.Send_Data.clicked.connect(MainWindow.send_data_click) # type: ignore
         self.Open_Com.clicked.connect(MainWindow.open_com_click) # type: ignore
-        self.pushButton.clicked.connect(self.Data_Display.clear) # type: ignore
+        self.ClearRecShow.clicked.connect(self.Data_Display.clear) # type: ignore
         self.Data_Display.textChanged.connect(MainWindow.drag_scroll) # type: ignore
-        self.pushButton_2.clicked.connect(self.Send_Data_Display.clear) # type: ignore
+        self.ClearSendShow.clicked.connect(self.Send_Data_Display.clear) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -90,7 +93,8 @@ class Ui_MainWindow(object):
         self.label_4.setText(_translate("MainWindow", "波特率"))
         self.label_3.setText(_translate("MainWindow", "串口号"))
         self.Open_Com.setText(_translate("MainWindow", "打开串口"))
-        self.pushButton.setText(_translate("MainWindow", "清接收区"))
+        self.ClearRecShow.setText(_translate("MainWindow", "清接收区"))
         self.recHexShow.setText(_translate("MainWindow", "Hex显示"))
         self.sendHex.setText(_translate("MainWindow", "Hex发送"))
-        self.pushButton_2.setText(_translate("MainWindow", "清发送区"))
+        self.ClearSendShow.setText(_translate("MainWindow", "清发送区"))
+        self.ComReflash.setText(_translate("MainWindow", "刷新串口列表"))
