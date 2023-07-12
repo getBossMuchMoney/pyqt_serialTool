@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'd:\github_prj\pyqt_serialTool\ser_prj\untitled.ui'
+# Form implementation generated from reading ui file 'e:\gitHub_prj\pyqt_serialTool\ser_prj\untitled.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.9
 #
@@ -67,9 +67,19 @@ class Ui_MainWindow(object):
         self.ComReflash = QtWidgets.QPushButton(self.centralwidget)
         self.ComReflash.setGeometry(QtCore.QRect(960, 170, 101, 28))
         self.ComReflash.setObjectName("ComReflash")
+        self.send_freq = QtWidgets.QLineEdit(self.centralwidget)
+        self.send_freq.setGeometry(QtCore.QRect(920, 580, 71, 16))
+        self.send_freq.setEchoMode(QtWidgets.QLineEdit.Normal)
+        self.send_freq.setObjectName("send_freq")
+        self.label_5 = QtWidgets.QLabel(self.centralwidget)
+        self.label_5.setGeometry(QtCore.QRect(1000, 580, 54, 12))
+        self.label_5.setObjectName("label_5")
+        self.send_auto = QtWidgets.QCheckBox(self.centralwidget)
+        self.send_auto.setGeometry(QtCore.QRect(840, 580, 71, 16))
+        self.send_auto.setObjectName("send_auto")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1160, 26))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1160, 23))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
@@ -98,3 +108,5 @@ class Ui_MainWindow(object):
         self.sendHex.setText(_translate("MainWindow", "Hex发送"))
         self.ClearSendShow.setText(_translate("MainWindow", "清发送区"))
         self.ComReflash.setText(_translate("MainWindow", "刷新串口列表"))
+        self.label_5.setText(_translate("MainWindow", "ms/次"))
+        self.send_auto.setText(_translate("MainWindow", "定时发送"))
