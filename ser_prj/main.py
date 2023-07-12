@@ -340,7 +340,7 @@ def ui_process():
 
  
 if __name__ == '__main__':
-  
+  multiprocessing.freeze_support()  #多进程加这句，不然程序打包后不能正常运行
   ui_process()
   
 
