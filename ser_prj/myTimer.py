@@ -28,8 +28,6 @@ class msTimer():
     def pause(self):
         self._winmm.timeKillEvent(self._timerId)
        
-    def resume(self):
-        self._winmm.timeSetEvent(self.msec,1,self._cb,0,1)
         
 #msTimer_Call需要重写回调函数 
 #使用举例:

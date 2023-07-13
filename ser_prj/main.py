@@ -10,7 +10,7 @@ from multiprocessing import Pool,Process,Value,Array,Manager,Queue
 from enum import IntEnum
 import time
 from datetime import datetime
-from PyQt5.QtGui import QTextCursor
+from PyQt5.QtGui import QTextCursor,QIntValidator
 from myTimer import msTimer
 
 
@@ -48,7 +48,6 @@ custom_serial = Serial
 usart_process = 0
 usart_workState =Queue()
 serial_cfg = Queue()
-serial_ctr = Queue()
 usart_data = Queue()
 rx_data = Queue()
 tx_data = Queue()
@@ -56,6 +55,7 @@ usart_recieve_check = usart_recUpdate()
 com_err = state_check()
 comState = Value('i',com_state.CLOSE) 
 comListTimer = msTimer(None,0)
+auto_send_timer = msTimer(None,0)
 
 
 
@@ -102,7 +102,7 @@ def send_deal(sendClose_event,tx_data):
 
 
 # 进行串口配置
-def usart_setting(serial_cfg,serial_ctr,usart_workState,rx_data,tx_data):
+def usart_setting(serial_cfg,usart_workState,rx_data,tx_data):
   global sSerial,recClose_event
   try:
     seriConf = serial_cfg.get(block=True)
@@ -172,22 +172,32 @@ def bytesrialtoarray(msg):
     for i in range(len(buf)):
         data.append(int(buf[i],16))
         
-    return data
-  
+    return data 
   
 
 class Mywindow(QMainWindow, Ui_MainWindow):
   def __init__(self):
     band = ["9600","19200","115200"]
     super().__init__()
+    
     usart_recieve_check.update_signal.connect(self.Set_Display_Data)
     com_err.update_signal.connect(self.com_err_window)
+    self.autoSendSinal = state_check()
+    self.autoSendSinal.update_signal.connect(self.send_data_click)
     self.setupUi(self)
+    
+    # 创建一个整数验证器
+    validator = QIntValidator()
+    # 设置验证器的范围，这里可以设置允许的最小值和最大值
+    validator.setRange(0, 999999)  #定时发送范围 单位毫秒
+    # 设置验证器到 send_freq 中
+    self.send_freq.setValidator(validator)
+     
     self.ComReflash.clicked.connect(self.com_reflash)
     self.combuf = 0
     self.COM_List = 0
-    self.Send_Data.setEnabled(False)
     self.com_thread = Thread(target=self.com_conctrl)
+    
     self.com_reflash()
     comListTimer.change(self.com_reflash,3000)
     comListTimer.start()
@@ -205,21 +215,49 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         self.Com_Port.addItem(self.COM_List[i].name)
     
   
-  
   #槽函数
+  def send_auto_click(self):
+    if self.send_auto.isChecked():
+      print("定时发送打开")
+      data = self.send_freq.text()
+      if len(data) > 0:
+        self.send_freq.setEnabled(False) #自动发送勾选后发送时间间隔不能修改
+        autoSendTime = int(data)
+        auto_send_timer.change(self.auto_send_callback,autoSendTime)
+        auto_send_timer.start()
+      else:
+        self.send_auto.setChecked(False)  #取消勾选自动发送
+        print("定时发送关闭")
+        QMessageBox.warning(None, "警告", "请设置发送时间间隔！！！", QMessageBox.Ok)
+      
+    else:
+      if Com_Open_Flag == com_state.CLOSE:
+        QMessageBox.warning(None, "警告", "只允许连接后开启！！！", QMessageBox.Ok)
+      try:
+        auto_send_timer.pause()
+      except:
+        {}  
+      self.send_freq.setEnabled(True) #解锁自动发送时间输入
+      print("定时发送关闭")
+      
+  
+  def auto_send_callback(self):
+    self.autoSendSinal.update()
+    
+    
+  
+  #串口按钮点击槽函数
   def open_com_click(self):    
     if not self.com_thread.is_alive():
       self.Open_Com.setEnabled(False)
       self.com_thread = Thread(target=self.com_conctrl)
       self.com_thread.start()
       
-
-
   
   def com_conctrl(self):
     global custom_serial  # 全局变量，需要加global
     global Com_Open_Flag
-    global usart_process,serial_cfg,serial_ctr,rx_data,tx_data
+    global usart_process,serial_cfg,rx_data,tx_data
     
     if self.Open_Com.text() == "打开串口":
       print("点击了打开串口按钮")
@@ -228,22 +266,32 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       cfg_list = [comPort,comBand]
       # serial_cfg = Manager().list(range(2))
       serial_cfg.put(cfg_list)
-      usart_process = Process(target=usart_setting,args=(serial_cfg,serial_ctr,usart_workState,rx_data,tx_data))
+      usart_process = Process(target=usart_setting,args=(serial_cfg,usart_workState,rx_data,tx_data))
       usart_process.start()
       Com_Open_Flag = usart_workState.get(block=True,timeout=3)
-      if Com_Open_Flag == com_state.OPEN:     
+      if Com_Open_Flag == com_state.OPEN:
+        self.send_auto.setCheckable(True)   #允许自动发送按钮勾选
         self.Open_Com.setText("关闭串口")
         self.Send_Data.setEnabled(True)
         self.Com_Band.setEnabled(False)  # 串口号和波特率变为不可选择
         self.Com_Port.setEnabled(False)
         Thread(target = self.recieve_data).start()
       else:
-        com_err.update() #通过信号槽方式实现警告窗口，因为窗口实现必须跟主线程同个线程
-        # QMessageBox.warning(None, "警告", "串口被占用或不存在！！！", QMessageBox.Ok)  
+        com_err.update() #通过信号槽方式实现警告窗口，因为窗口弹出实现必须跟主线程同个线程
+        # QMessageBox.warning(None, "警告", "串口被占用或不存在！！！", QMessageBox.Ok) #不能在这里直接使用 
         
     else:
       print("点击了关闭串口按钮")
-      self.Send_Data.setEnabled(False)
+      self.send_freq.setEnabled(True)   #允许发送时间间隔设置
+      self.send_auto.setChecked(False)  #取消勾选自动发送
+      self.send_auto.setCheckable(False) #不允许自动发送按钮勾选
+      
+      try:
+        auto_send_timer.pause()
+      except:
+        {} 
+      
+      self.Send_Data.setEnabled(False)  #禁止发送按钮
       serial_cfg.put(com_state.CLOSE)
       Com_Open_Flag = com_state.CLOSE
       self.Com_Band.setEnabled(True)  # 串口号和波特率变为可选择
@@ -270,7 +318,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
 
       time.sleep(0.001)
 
-
+  #槽函数
   def drag_scroll(self):
     self.Data_Display.moveCursor(QTextCursor.End)  #数据刷新滚动条自动向下滚动
 
@@ -289,7 +337,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
           Data_T =  bytesrialtoarray(Data_Need_Send)
           tx_data.put(Data_T)     
           if self.recHexShow.isChecked():
-            show_str = (' '.join([hex(x)[2:].zfill(2) for x in Data_Need_Send]))
+            show_str = (' '.join([hex(x)[2:].zfill(2) for x in Data_Need_Send])).upper()
           else:
             try:
               show_str = str(Data_Need_Send, encoding="gbk")
@@ -307,9 +355,9 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         tx_data.put(Data_Need_Send.encode("gbk"))  #发送
         
         if self.recHexShow.isChecked():
-          show_str = Data_Need_Send.encode('utf-8').hex()
+          show_str = Data_Need_Send.encode('gbk').hex()
           show_str = bytes.fromhex(show_str)
-          show_str = (' '.join([hex(x)[2:].zfill(2) for x in show_str]))
+          show_str = (' '.join([hex(x)[2:].zfill(2) for x in show_str])).upper()
         else:
           show_str = Data_Need_Send
                          
@@ -319,7 +367,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
           
   def Set_Display_Data(self, Data):
     if self.recHexShow.isChecked():
-      show_str = (' '.join([hex(x)[2:].zfill(2) for x in Data]))
+      show_str = (' '.join([hex(x)[2:].zfill(2) for x in Data])).upper()
     else:
       try:
         show_str = str(Data, encoding="gbk")
@@ -337,6 +385,7 @@ def ui_process():
   window = Mywindow()
   window.show()
   sys.exit(app.exec_())
+
 
  
 if __name__ == '__main__':

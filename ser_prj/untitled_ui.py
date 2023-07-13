@@ -26,6 +26,7 @@ class Ui_MainWindow(object):
         self.label_2.setGeometry(QtCore.QRect(10, 520, 69, 19))
         self.label_2.setObjectName("label_2")
         self.Send_Data = QtWidgets.QPushButton(self.centralwidget)
+        self.Send_Data.setEnabled(False)
         self.Send_Data.setGeometry(QtCore.QRect(10, 630, 93, 28))
         self.Send_Data.setObjectName("Send_Data")
         self.Send_Data_Display = QtWidgets.QTextEdit(self.centralwidget)
@@ -54,6 +55,7 @@ class Ui_MainWindow(object):
         self.ClearRecShow.setObjectName("ClearRecShow")
         self.recHexShow = QtWidgets.QCheckBox(self.centralwidget)
         self.recHexShow.setGeometry(QtCore.QRect(840, 500, 81, 16))
+        self.recHexShow.setCheckable(True)
         self.recHexShow.setChecked(True)
         self.recHexShow.setTristate(False)
         self.recHexShow.setObjectName("recHexShow")
@@ -68,18 +70,22 @@ class Ui_MainWindow(object):
         self.ComReflash.setGeometry(QtCore.QRect(960, 170, 101, 28))
         self.ComReflash.setObjectName("ComReflash")
         self.send_freq = QtWidgets.QLineEdit(self.centralwidget)
-        self.send_freq.setGeometry(QtCore.QRect(920, 580, 71, 16))
+        self.send_freq.setGeometry(QtCore.QRect(940, 580, 71, 21))
         self.send_freq.setEchoMode(QtWidgets.QLineEdit.Normal)
+        self.send_freq.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
+        self.send_freq.setDragEnabled(False)
+        self.send_freq.setReadOnly(False)
         self.send_freq.setObjectName("send_freq")
         self.label_5 = QtWidgets.QLabel(self.centralwidget)
-        self.label_5.setGeometry(QtCore.QRect(1000, 580, 54, 12))
+        self.label_5.setGeometry(QtCore.QRect(1020, 580, 54, 20))
         self.label_5.setObjectName("label_5")
         self.send_auto = QtWidgets.QCheckBox(self.centralwidget)
-        self.send_auto.setGeometry(QtCore.QRect(840, 580, 71, 16))
+        self.send_auto.setGeometry(QtCore.QRect(840, 580, 91, 16))
+        self.send_auto.setCheckable(False)
         self.send_auto.setObjectName("send_auto")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1160, 23))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1160, 26))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
@@ -92,6 +98,7 @@ class Ui_MainWindow(object):
         self.ClearRecShow.clicked.connect(self.Data_Display.clear) # type: ignore
         self.Data_Display.textChanged.connect(MainWindow.drag_scroll) # type: ignore
         self.ClearSendShow.clicked.connect(self.Send_Data_Display.clear) # type: ignore
+        self.send_auto.clicked.connect(MainWindow.send_auto_click) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
