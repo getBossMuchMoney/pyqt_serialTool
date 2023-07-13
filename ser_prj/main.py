@@ -210,7 +210,8 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       comListTimer.pause()
       if self.send_auto.isChecked():
         auto_send_timer.pause()
-    event.accept()  
+    event.accept()
+    self.close()  
 
   
   def com_reflash(self): 
