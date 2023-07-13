@@ -319,6 +319,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       self.Com_Port.setEnabled(True)
       usart_process.join()  #需加入.join(),等待串口发送和接收进程结束以及数据队列清空
       self.Open_Com.setText("打开串口")
+     
       
     self.Open_Com.setEnabled(True)
    
