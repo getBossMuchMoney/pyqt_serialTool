@@ -1,4 +1,4 @@
-import sys
+import sys,os
 from serial import Serial
 from serial.tools import list_ports
 from threading import Thread,Event
@@ -12,7 +12,6 @@ import time
 from datetime import datetime
 from PyQt5.QtGui import QTextCursor,QIntValidator
 from myTimer import msTimer
-
 
 #自定义信号量
 class usart_recUpdate(QObject):
@@ -45,7 +44,7 @@ class com_state(IntEnum):
 #父进程全局变量
 Com_Open_Flag = com_state.CLOSE  # 串口打开标志
 custom_serial = Serial
-usart_process = 0
+usart_process = None
 usart_workState =Queue()
 serial_cfg = Queue()
 usart_data = Queue()
@@ -186,6 +185,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     self.autoSendSinal.update_signal.connect(self.send_data_click)
     self.setupUi(self)
     
+
     # 创建一个整数验证器
     validator = QIntValidator()
     # 设置验证器的范围，这里可以设置允许的最小值和最大值
@@ -193,6 +193,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     # 设置验证器到 send_freq 中
     self.send_freq.setValidator(validator)
      
+
     self.ComReflash.clicked.connect(self.com_reflash)
     self.combuf = 0
     self.COM_List = 0
@@ -205,13 +206,17 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     for i in range(0,len(band)):
       self.Com_Band.addItem(band[i])
 
-  def closeEvent(self,event):            #程序关闭事件，关闭两个定时器
-    if Com_Open_Flag == com_state.OPEN:
-      comListTimer.pause()
-      if self.send_auto.isChecked():
-        auto_send_timer.pause()
-    event.accept()
-    self.close()  
+
+  def closeEvent(self,event):   #重写closeevent，确保窗口关闭后子进程被销毁不会留下后台         
+    reply = QMessageBox.question(self,'串口助手beta版',"是否要退出程序？",QMessageBox.Yes | QMessageBox.No,QMessageBox.No)
+    if reply == QMessageBox.Yes:
+      if not usart_process == None:
+        usart_process.terminate()  #变成僵尸进程
+        usart_process.join()       #进程完全退出
+      event.accept()
+      os._exit(0)
+    else:
+      event.ignore()
 
   
   def com_reflash(self): 
