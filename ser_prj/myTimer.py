@@ -37,10 +37,7 @@ class msTimer():
 # @_200msTimer.msTimer_callback()
 # def mcallback():
 #     print("测试回调")
-# 
-# 
-# 
-# #
+
 
       
 class msTimer_Call(msTimer):
