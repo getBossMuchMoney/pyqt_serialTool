@@ -205,6 +205,13 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     for i in range(0,len(band)):
       self.Com_Band.addItem(band[i])
 
+  def closeEvent(self,event):            #程序关闭事件，关闭两个定时器
+    if Com_Open_Flag == com_state.OPEN:
+      comListTimer.pause()
+      if self.send_auto.isChecked():
+        auto_send_timer.pause()
+    event.accept()  
+
   
   def com_reflash(self): 
     self.combuf = Get_Com_List()  # 获取串口列表
@@ -223,6 +230,11 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       if len(data) > 0:
         self.send_freq.setEnabled(False) #自动发送勾选后发送时间间隔不能修改
         autoSendTime = int(data)
+        if autoSendTime == 0:
+          self.send_auto.setChecked(False)  #取消勾选自动发送
+          self.send_freq.setEnabled(True) #解锁自动发送时间输入
+          QMessageBox.warning(None, "警告", "发送时间间隔不能为零！！！", QMessageBox.Ok)
+          return
         auto_send_timer.change(self.auto_send_callback,autoSendTime)
         auto_send_timer.start()
       else:
@@ -267,6 +279,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       # serial_cfg = Manager().list(range(2))
       serial_cfg.put(cfg_list)
       usart_process = Process(target=usart_setting,args=(serial_cfg,usart_workState,rx_data,tx_data))
+      usart_process.daemon = True
       usart_process.start()
       Com_Open_Flag = usart_workState.get(block=True,timeout=3)
       if Com_Open_Flag == com_state.OPEN:
@@ -275,7 +288,9 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         self.Send_Data.setEnabled(True)
         self.Com_Band.setEnabled(False)  # 串口号和波特率变为不可选择
         self.Com_Port.setEnabled(False)
-        Thread(target = self.recieve_data).start()
+        deal_rec = Thread(target = self.recieve_data)
+        deal_rec.daemon = True
+        deal_rec.start()
       else:
         com_err.update() #通过信号槽方式实现警告窗口，因为窗口弹出实现必须跟主线程同个线程
         # QMessageBox.warning(None, "警告", "串口被占用或不存在！！！", QMessageBox.Ok) #不能在这里直接使用 
@@ -385,6 +400,7 @@ def ui_process():
   window = Mywindow()
   window.show()
   sys.exit(app.exec_())
+  
 
 
  
