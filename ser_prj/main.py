@@ -44,6 +44,7 @@ class com_state(IntEnum):
 #父进程全局变量
 Com_Open_Flag = com_state.CLOSE  # 串口打开标志
 custom_serial = Serial
+custom_serial.write
 usart_process = None
 usart_workState =Queue()
 serial_cfg = Queue()
@@ -79,25 +80,31 @@ def rec_deal(recClose_event,rx_data):
   while True:
     if recClose_event.is_set():
       break
+    
     data = sSerial.read_all()
     if len(data)>0:
       rx_data.put(data)
-
+      
     time.sleep(0.001)  #降低cpu占用率
 
 
 def send_deal(sendClose_event,usart_workState,tx_data):
   global sSerial
   while True:
+    
     if sendClose_event.is_set():
-      break
-
+      break  
+     
     if tx_data.empty() == False:
       data = tx_data.get()
-      sSerial.write(data)
-      send_finish = 1
-      usart_workState.put(send_finish)
-      
+      try:
+        sSerial.write(data)
+        send_finish = 1
+        usart_workState.put(send_finish)
+      except:
+        send_fail = 0
+        usart_workState.put(send_fail)
+          
     time.sleep(0.001)  #降低cpu占用率
 
 
@@ -130,7 +137,6 @@ def usart_setting(serial_cfg,usart_workState,rx_data,tx_data):
           send_thread.join()
           clear(rx_data)
           clear(tx_data)
-          clear(usart_workState)
           sSerial.close()
           break  
       time.sleep(0.001)               
@@ -280,9 +286,12 @@ class Mywindow(QMainWindow, Ui_MainWindow):
      
   
   def auto_send_callback(self):
-
+    # print("定时器中断",self.sendFuncState,self.send_auto.isChecked(),usart_workState.empty(),"\n")
+    # if self.sendFuncState == 0 and self.send_auto.isChecked() == True and usart_workState.empty() == True:
+    #   self.autoSendSinal.update()
     if self.sendFuncState == 0:
-      self.autoSendSinal.update()
+      self.send_data_click()
+      
    
        
   
@@ -325,7 +334,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         
     else:
       print("点击了关闭串口按钮")
-  
+      Com_Open_Flag = com_state.CLOSE
       if self.send_auto.isChecked():
         auto_send_timer.pause()
         self.send_auto.setChecked(False)  #取消勾选自动发送
@@ -334,7 +343,6 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       
       self.Send_Data.setEnabled(False)  #禁止发送按钮
       serial_cfg.put(com_state.CLOSE)
-      Com_Open_Flag = com_state.CLOSE
       self.Com_Band.setEnabled(True)  # 串口号和波特率变为可选择
       self.Com_Port.setEnabled(True)
       usart_process.join()  #需加入.join(),等待串口发送和接收进程结束以及数据队列清空
@@ -368,66 +376,70 @@ class Mywindow(QMainWindow, Ui_MainWindow):
   #槽函数
   def send_data_click(self):
     self.sendFuncState = 1
-    Data_Need_Send = self.Send_Data_Display.toPlainText()
-    dlen = len(Data_Need_Send)
-    if dlen>0:
-       
-      if self.sendHex.isChecked():        
-        Data_Need_Send = Data_Need_Send.replace(" ", "")  # 删除空格           
-        try:
-          Data_Need_Send = bytes.fromhex(Data_Need_Send)
-          Data_T =  bytesrialtoarray(Data_Need_Send)
-          tx_data.put(Data_T)
+    if Com_Open_Flag == com_state.OPEN:
+      Data_Need_Send = self.Send_Data_Display.toPlainText()
+      dlen = len(Data_Need_Send)
+      if dlen>0:    
+        if self.sendHex.isChecked():        
+          Data_Need_Send = Data_Need_Send.replace(" ", "")  # 删除空格           
+          try:
+            Data_Need_Send = bytes.fromhex(Data_Need_Send)
+            Data_T =  bytesrialtoarray(Data_Need_Send)
+            tx_data.put(Data_T)
           
-          if not usart_workState.empty():
-            usart_workState.get()  #等待一帧发送完毕
-          else:
-            self.sendFuncState = 0
-            return  
-          
-          timeStr = get_strTime()   
-          if self.recHexShow.isChecked():
-            show_str = (' '.join([hex(x)[2:].zfill(2) for x in Data_Need_Send])).upper()
-          else:
             try:
-              show_str = str(Data_Need_Send, encoding="gbk")
+              if send_fail == usart_workState.get(timeout = 1):  #等待一帧发送完毕 
+                self.sendFuncState = 0
+                return      
             except:
-              show_str = (''.join('?' for x in Data_Need_Send))
+              self.sendFuncState = 0
+              return
+               
+            timeStr = get_strTime()   
+            if self.recHexShow.isChecked():
+              show_str = (' '.join([hex(x)[2:].zfill(2) for x in Data_Need_Send])).upper()
+            else:
+              try:
+                show_str = str(Data_Need_Send, encoding="gbk")
+              except:
+                show_str = (''.join('?' for x in Data_Need_Send))
               
-          show_str = '[' + timeStr + ']' + "发→◇" + show_str + '\n'
+            show_str = '[' + timeStr + ']' + "发→◇" + show_str + '\n'
+            self.Data_Display.insertPlainText(show_str)
+            
+          except:
+            if self.send_auto.isChecked():
+              auto_send_timer.pause()           #自动发送定时器关闭
+              self.send_auto.setChecked(False)  #取消勾选自动发送 
+              self.send_freq.setEnabled(True)   #允许发送时间间隔设置
+               
+            QMessageBox.warning(None, "警告", "待发送数据格式错误！！！", QMessageBox.Ok)
+                       
+        else:
+          tx_data.put(Data_Need_Send.encode("gbk"))  #发送
+          send_fail = 0
+          try:
+            if send_fail == usart_workState.get(timeout = 1):  #等待一帧发送完毕 
+              self.sendFuncState = 0
+              return      
+          except:
+            self.sendFuncState = 0
+            return
+           
+          timeStr = get_strTime()
+        
+          if self.recHexShow.isChecked():
+            show_str = Data_Need_Send.encode('gbk').hex()
+            show_str = bytes.fromhex(show_str)
+            show_str = (' '.join([hex(x)[2:].zfill(2) for x in show_str])).upper()
+          else:
+            show_str = Data_Need_Send
+                         
+          show_str = '[' + timeStr + ']' + "发→◇" + show_str + '\n'       
           self.Data_Display.insertPlainText(show_str)
             
-        except:
-          if self.send_auto.isChecked():
-            auto_send_timer.pause()           #自动发送定时器关闭
-            self.send_auto.setChecked(False)  #取消勾选自动发送 
-            self.send_freq.setEnabled(True)   #允许发送时间间隔设置
-               
-          QMessageBox.warning(None, "警告", "待发送数据格式错误！！！", QMessageBox.Ok)
-                       
-      else:
-        tx_data.put(Data_Need_Send.encode("gbk"))  #发送
-        
-        if not usart_workState.empty():
-          usart_workState.get()  #等待一帧发送完毕
-        else:
-          self.sendFuncState = 0
-          return
-            
-        timeStr = get_strTime()
-        
-        if self.recHexShow.isChecked():
-          show_str = Data_Need_Send.encode('gbk').hex()
-          show_str = bytes.fromhex(show_str)
-          show_str = (' '.join([hex(x)[2:].zfill(2) for x in show_str])).upper()
-        else:
-          show_str = Data_Need_Send
-                         
-        show_str = '[' + timeStr + ']' + "发→◇" + show_str + '\n'       
-        self.Data_Display.insertPlainText(show_str)  
-        
-    self.sendFuncState = 0
-     
+      self.sendFuncState = 0
+    
         
           
   def Set_Display_Data(self, Data):
