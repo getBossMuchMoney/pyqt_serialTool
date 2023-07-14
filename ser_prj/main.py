@@ -86,7 +86,7 @@ def rec_deal(recClose_event,rx_data):
     time.sleep(0.001)  #降低cpu占用率
 
 
-def send_deal(sendClose_event,tx_data):
+def send_deal(sendClose_event,usart_workState,tx_data):
   global sSerial
   while True:
     if sendClose_event.is_set():
@@ -95,7 +95,9 @@ def send_deal(sendClose_event,tx_data):
     if tx_data.empty() == False:
       data = tx_data.get()
       sSerial.write(data)
-
+      send_finish = 1
+      usart_workState.put(send_finish)
+      
     time.sleep(0.001)  #降低cpu占用率
 
 
@@ -114,7 +116,7 @@ def usart_setting(serial_cfg,usart_workState,rx_data,tx_data):
   if sSerial.isOpen() == True:
     print("串口打开成功")
     rec_thread = Thread(target=rec_deal,args=(recClose_event,rx_data))
-    send_thread = Thread(target=send_deal,args=(sendClose_event,tx_data))
+    send_thread = Thread(target=send_deal,args=(sendClose_event,usart_workState,tx_data))
     rec_thread.start()
     send_thread.start()
     usart_workState.put(com_state.OPEN)
@@ -128,6 +130,7 @@ def usart_setting(serial_cfg,usart_workState,rx_data,tx_data):
           send_thread.join()
           clear(rx_data)
           clear(tx_data)
+          clear(usart_workState)
           sSerial.close()
           break  
       time.sleep(0.001)               
@@ -161,7 +164,20 @@ def get_strTime():
   else:
     strSecond = str(second)
     
-  return strHour + ':' + strMinute + ':' + strSecond + '.' + (str(curr_time.microsecond))[:3]
+  microsecond = str(curr_time.microsecond)
+  
+  if len(microsecond) == 3:
+    microsecond = "000"
+  elif len(microsecond) == 4:
+    microsecond = '00' + microsecond[:1]
+  elif len(microsecond) == 5:
+    microsecond = "0" + microsecond[:2]
+  else:
+    microsecond = microsecond[:3]
+    
+  timestr = strHour + ':' + strMinute + ':' + strSecond + '.' + microsecond
+  
+  return timestr
 
 
  #字节串转整形列表
@@ -183,6 +199,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     com_err.update_signal.connect(self.com_err_window)
     self.autoSendSinal = state_check()
     self.autoSendSinal.update_signal.connect(self.send_data_click)
+    self.sendFuncState = 0
     self.setupUi(self)
     
 
@@ -236,11 +253,13 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       if len(data) > 0:
         self.send_freq.setEnabled(False) #自动发送勾选后发送时间间隔不能修改
         autoSendTime = int(data)
+        
         if autoSendTime == 0:
           self.send_auto.setChecked(False)  #取消勾选自动发送
           self.send_freq.setEnabled(True) #解锁自动发送时间输入
           QMessageBox.warning(None, "警告", "发送时间间隔不能为零！！！", QMessageBox.Ok)
           return
+        
         auto_send_timer.change(self.auto_send_callback,autoSendTime)
         auto_send_timer.start()
       else:
@@ -254,15 +273,18 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       try:
         auto_send_timer.pause()
       except:
-        {}  
+        {}
+          
       self.send_freq.setEnabled(True) #解锁自动发送时间输入
       print("定时发送关闭")
-      
+     
   
   def auto_send_callback(self):
-    self.autoSendSinal.update()
-    
-    
+
+    if self.sendFuncState == 0:
+      self.autoSendSinal.update()
+   
+       
   
   #串口按钮点击槽函数
   def open_com_click(self):    
@@ -303,14 +325,12 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         
     else:
       print("点击了关闭串口按钮")
-      self.send_freq.setEnabled(True)   #允许发送时间间隔设置
-      self.send_auto.setChecked(False)  #取消勾选自动发送
-      self.send_auto.setCheckable(False) #不允许自动发送按钮勾选
-      
-      try:
+  
+      if self.send_auto.isChecked():
         auto_send_timer.pause()
-      except:
-        {} 
+        self.send_auto.setChecked(False)  #取消勾选自动发送
+        self.send_freq.setEnabled(True)   #允许发送时间间隔设置
+        self.send_auto.setCheckable(False) #不允许自动发送按钮勾选
       
       self.Send_Data.setEnabled(False)  #禁止发送按钮
       serial_cfg.put(com_state.CLOSE)
@@ -347,17 +367,25 @@ class Mywindow(QMainWindow, Ui_MainWindow):
 
   #槽函数
   def send_data_click(self):
-     Data_Need_Send = self.Send_Data_Display.toPlainText()
-     dlen = len(Data_Need_Send)
-     if dlen>0:
-      timeStr = get_strTime()  
+    self.sendFuncState = 1
+    Data_Need_Send = self.Send_Data_Display.toPlainText()
+    dlen = len(Data_Need_Send)
+    if dlen>0:
+       
       if self.sendHex.isChecked():        
-        Data_Need_Send = Data_Need_Send.replace(" ", "")  # 删除空格
-              
+        Data_Need_Send = Data_Need_Send.replace(" ", "")  # 删除空格           
         try:
           Data_Need_Send = bytes.fromhex(Data_Need_Send)
           Data_T =  bytesrialtoarray(Data_Need_Send)
-          tx_data.put(Data_T)     
+          tx_data.put(Data_T)
+          
+          if not usart_workState.empty():
+            usart_workState.get()  #等待一帧发送完毕
+          else:
+            self.sendFuncState = 0
+            return  
+          
+          timeStr = get_strTime()   
           if self.recHexShow.isChecked():
             show_str = (' '.join([hex(x)[2:].zfill(2) for x in Data_Need_Send])).upper()
           else:
@@ -370,11 +398,23 @@ class Mywindow(QMainWindow, Ui_MainWindow):
           self.Data_Display.insertPlainText(show_str)
             
         except:
-          QMessageBox.warning(None, "警告", "待发送数据格式错误！！！", QMessageBox.Ok)
-      
+          if self.send_auto.isChecked():
+            auto_send_timer.pause()           #自动发送定时器关闭
+            self.send_auto.setChecked(False)  #取消勾选自动发送 
+            self.send_freq.setEnabled(True)   #允许发送时间间隔设置
                
+          QMessageBox.warning(None, "警告", "待发送数据格式错误！！！", QMessageBox.Ok)
+                       
       else:
         tx_data.put(Data_Need_Send.encode("gbk"))  #发送
+        
+        if not usart_workState.empty():
+          usart_workState.get()  #等待一帧发送完毕
+        else:
+          self.sendFuncState = 0
+          return
+            
+        timeStr = get_strTime()
         
         if self.recHexShow.isChecked():
           show_str = Data_Need_Send.encode('gbk').hex()
@@ -385,6 +425,9 @@ class Mywindow(QMainWindow, Ui_MainWindow):
                          
         show_str = '[' + timeStr + ']' + "发→◇" + show_str + '\n'       
         self.Data_Display.insertPlainText(show_str)  
+        
+    self.sendFuncState = 0
+     
         
           
   def Set_Display_Data(self, Data):
