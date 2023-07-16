@@ -57,15 +57,12 @@ class com_state(IntEnum):
 #父进程全局变量
 Com_Open_Flag = com_state.CLOSE  # 串口打开标志
 custom_serial = Serial
-custom_serial.write
 usart_process = None
 usart_workState =Queue()
 serial_cfg = Queue()
 usart_data = Queue()
 rx_data = Queue()
 tx_data = Queue()
-usart_recieve_check = usart_recUpdate()
-com_err = state_check()
 comState = Value('i',com_state.CLOSE) 
 comListTimer = msTimer(None,0)
 auto_send_timer = msTimer(None,0)
@@ -214,9 +211,6 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     band = ["9600","19200","115200"]
     super().__init__()
     
-    usart_recieve_check.update_signal.connect(self.Set_Display_Data)
-    com_err.update_signal.connect(self.com_err_window)
-
     self.send_thread = QThread()
     # self.autoSendSinal = state_check()
     # self.autoSendSinal.moveToThread(self.auto_send_thread)
@@ -225,6 +219,9 @@ class Mywindow(QMainWindow, Ui_MainWindow):
 
 
     self.setupUi(self)
+
+    self.usart_rec_check = usart_recUpdate()
+    self.usart_rec_check.update_signal.connect(self.Set_Display_Data)
     
     # 创建一个整数验证器
     validator = QIntValidator()
@@ -239,7 +236,9 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     self.com_thread = QThread()
     self.com_thread.started.connect(self.com_conctrl)
 
-    
+    self.deal_rec_thread =  Thread(target = self.recieve_data)
+    self.deal_rec_thread.daemon = True
+
     self.com_reflash()
     comListTimer.change(self.com_reflash,3000)
     comListTimer.start()
@@ -341,12 +340,9 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         self.Send_Data.setEnabled(True)
         self.Com_Band.setEnabled(False)  # 串口号和波特率变为不可选择
         self.Com_Port.setEnabled(False)
-        deal_rec = Thread(target = self.recieve_data)
-        deal_rec.daemon = True
-        deal_rec.start()
+        self.deal_rec_thread.start()
       else:
-        com_err.update() #通过信号槽方式实现警告窗口，因为窗口弹出实现必须跟主线程同个线程
-        # QMessageBox.warning(None, "警告", "串口被占用或不存在！！！", QMessageBox.Ok) #不能在这里直接使用 
+        QMessageBox.warning(None, "警告", "串口被占用或不存在！！！", QMessageBox.Ok) #不能在这里直接使用 
         
     else:
       print("点击了关闭串口按钮")
@@ -368,22 +364,19 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     self.Open_Com.setEnabled(True)
     self.com_thread.quit()
    
-     
-  def com_err_window(self):
-    QMessageBox.warning(None, "警告", "串口被占用或不存在！！！", QMessageBox.Ok)
-     
-
 
   def recieve_data(self):
     global rx_data
+
     while True:
+
       if Com_Open_Flag == com_state.CLOSE:
           break;
+      
       if rx_data.empty() == False:
         data = rx_data.get()
-        usart_recieve_check.update(data)
+        self.usart_rec_check.update(data)
 
-      time.sleep(0.001)
 
   #槽函数
   def drag_scroll(self):
@@ -442,7 +435,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         else:
           tx_data.put(Data_Need_Send.encode("gbk"))  #发送
           timeStr = get_strTime()
-          
+
           send_fail = 0
           try:
             if send_fail == usart_workState.get(timeout = 1):  #等待一帧发送完毕 
