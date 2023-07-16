@@ -4,7 +4,7 @@ from serial.tools import list_ports
 from threading import Thread,Event
 from PyQt5.QtWidgets import QApplication,QMainWindow,QMessageBox
 from untitled_ui import Ui_MainWindow
-from PyQt5.QtCore import Qt,pyqtSignal,QObject
+from PyQt5.QtCore import Qt,pyqtSignal,QObject,QThread
 import multiprocessing
 from multiprocessing import Pool,Process,Value,Array,Manager,Queue
 from enum import IntEnum
@@ -31,9 +31,22 @@ class state_check(QObject):
         QObject.__init__(self)
  
   def update(self):
-        self.update_signal.emit()
+    print("dasdasdas")
+    self.update_signal.emit()
 
-  
+
+
+class WorkThread(QThread):
+
+    def __int__(self):
+        # 初始化函数
+        super().__init__()\
+
+    def run(self):
+      {}
+
+
+
  
 
 class com_state(IntEnum):
@@ -203,24 +216,29 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     
     usart_recieve_check.update_signal.connect(self.Set_Display_Data)
     com_err.update_signal.connect(self.com_err_window)
-    self.autoSendSinal = state_check()
-    self.autoSendSinal.update_signal.connect(self.send_data_click)
-    self.sendFuncState = 0
+
+    self.send_thread = QThread()
+    # self.autoSendSinal = state_check()
+    # self.autoSendSinal.moveToThread(self.auto_send_thread)
+    # self.autoSendSinal.update_signal.connect(self.send_data_process)
+    self.send_thread.started.connect(self.send_data_process)
+
+
     self.setupUi(self)
     
-
     # 创建一个整数验证器
     validator = QIntValidator()
     # 设置验证器的范围，这里可以设置允许的最小值和最大值
     validator.setRange(0, 999999)  #定时发送范围 单位毫秒
     # 设置验证器到 send_freq 中
     self.send_freq.setValidator(validator)
-     
-
+ 
     self.ComReflash.clicked.connect(self.com_reflash)
     self.combuf = 0
     self.COM_List = 0
-    self.com_thread = Thread(target=self.com_conctrl)
+    self.com_thread = QThread()
+    self.com_thread.started.connect(self.com_conctrl)
+
     
     self.com_reflash()
     comListTimer.change(self.com_reflash,3000)
@@ -228,6 +246,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
 
     for i in range(0,len(band)):
       self.Com_Band.addItem(band[i])
+
 
 
   def closeEvent(self,event):   #重写closeevent，确保窗口关闭后子进程被销毁不会留下后台         
@@ -286,20 +305,17 @@ class Mywindow(QMainWindow, Ui_MainWindow):
      
   
   def auto_send_callback(self):
-    # print("定时器中断",self.sendFuncState,self.send_auto.isChecked(),usart_workState.empty(),"\n")
-    # if self.sendFuncState == 0 and self.send_auto.isChecked() == True and usart_workState.empty() == True:
-    #   self.autoSendSinal.update()
-    if self.sendFuncState == 0:
-      self.send_data_click()
-      
-   
-       
-  
+    if Com_Open_Flag == com_state.OPEN:
+      if not self.send_thread.isRunning():
+        self.send_thread.start()
+
+
+
   #串口按钮点击槽函数
   def open_com_click(self):    
-    if not self.com_thread.is_alive():
+    if not self.com_thread.isRunning():
       self.Open_Com.setEnabled(False)
-      self.com_thread = Thread(target=self.com_conctrl)
+      # self.com_thread = Thread(target=self.com_conctrl)
       self.com_thread.start()
       
   
@@ -350,6 +366,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
      
       
     self.Open_Com.setEnabled(True)
+    self.com_thread.quit()
    
      
   def com_err_window(self):
@@ -375,7 +392,12 @@ class Mywindow(QMainWindow, Ui_MainWindow):
 
   #槽函数
   def send_data_click(self):
-    self.sendFuncState = 1
+    if not self.send_thread.isRunning():
+      not self.send_thread.start()
+
+
+
+  def send_data_process(self):
     if Com_Open_Flag == com_state.OPEN:
       Data_Need_Send = self.Send_Data_Display.toPlainText()
       dlen = len(Data_Need_Send)
@@ -386,16 +408,18 @@ class Mywindow(QMainWindow, Ui_MainWindow):
             Data_Need_Send = bytes.fromhex(Data_Need_Send)
             Data_T =  bytesrialtoarray(Data_Need_Send)
             tx_data.put(Data_T)
-          
+            timeStr = get_strTime()
+
             try:
-              if send_fail == usart_workState.get(timeout = 1):  #等待一帧发送完毕 
-                self.sendFuncState = 0
+              if send_fail == usart_workState.get(timeout = 1):  #等待一帧发送完毕，超时一秒 
+                print("发送失败")
+                self.auto_send_thread.quit()
                 return      
             except:
-              self.sendFuncState = 0
+              print("发送超时")
+              self.auto_send_thread.quit()
               return
-               
-            timeStr = get_strTime()   
+                 
             if self.recHexShow.isChecked():
               show_str = (' '.join([hex(x)[2:].zfill(2) for x in Data_Need_Send])).upper()
             else:
@@ -417,16 +441,18 @@ class Mywindow(QMainWindow, Ui_MainWindow):
                        
         else:
           tx_data.put(Data_Need_Send.encode("gbk"))  #发送
+          timeStr = get_strTime()
+          
           send_fail = 0
           try:
             if send_fail == usart_workState.get(timeout = 1):  #等待一帧发送完毕 
-              self.sendFuncState = 0
+              print("发送失败")
+              self.auto_send_thread.quit()
               return      
           except:
-            self.sendFuncState = 0
+            print("发送超时")
+            self.auto_send_thread.quit()
             return
-           
-          timeStr = get_strTime()
         
           if self.recHexShow.isChecked():
             show_str = Data_Need_Send.encode('gbk').hex()
@@ -438,8 +464,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
           show_str = '[' + timeStr + ']' + "发→◇" + show_str + '\n'       
           self.Data_Display.insertPlainText(show_str)
             
-      self.sendFuncState = 0
-    
+    self.send_thread.quit()
         
           
   def Set_Display_Data(self, Data):
