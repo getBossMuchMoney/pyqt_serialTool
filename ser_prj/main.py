@@ -87,10 +87,8 @@ def clear(q):
 #串口接收数据处理线程
 def rec_deal(recClose_event,rx_data):
   global sSerial
-  while True:
-    if recClose_event.is_set():
-      break
-    
+  while not recClose_event.is_set(): 
+
     data = sSerial.read_all()
     if len(data)>0:
       rx_data.put(data)
@@ -100,11 +98,8 @@ def rec_deal(recClose_event,rx_data):
 
 def send_deal(sendClose_event,usart_workState,tx_data):
   global sSerial
-  while True:
-    
-    if sendClose_event.is_set():
-      break  
-     
+  while not sendClose_event.is_set():
+       
     if tx_data.empty() == False:
       data = tx_data.get()
       try:
@@ -138,8 +133,8 @@ def usart_setting(serial_cfg,usart_workState,rx_data,tx_data):
     send_thread.start()
     usart_workState.put(com_state.OPEN)
     while True:
-      if serial_cfg.empty() == False:
-        if serial_cfg.get(block = False) == com_state.CLOSE:
+      # if serial_cfg.empty() == False:
+        if serial_cfg.get() == com_state.CLOSE:
           print("串口关闭")
           recClose_event.set()
           sendClose_event.set()
@@ -149,7 +144,7 @@ def usart_setting(serial_cfg,usart_workState,rx_data,tx_data):
           clear(tx_data)
           sSerial.close()
           break  
-      time.sleep(0.001)               
+      # time.sleep(0.001)               
 
          
 
