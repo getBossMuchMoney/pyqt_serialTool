@@ -212,9 +212,6 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     super().__init__()
     
     self.send_thread = QThread()
-    # self.autoSendSinal = state_check()
-    # self.autoSendSinal.moveToThread(self.auto_send_thread)
-    # self.autoSendSinal.update_signal.connect(self.send_data_process)
     self.send_thread.started.connect(self.send_data_process)
 
 
@@ -236,8 +233,6 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     self.com_thread = QThread()
     self.com_thread.started.connect(self.com_conctrl)
 
-    self.deal_rec_thread =  Thread(target = self.recieve_data)
-    self.deal_rec_thread.daemon = True
 
     self.com_reflash()
     comListTimer.change(self.com_reflash,3000)
@@ -314,7 +309,6 @@ class Mywindow(QMainWindow, Ui_MainWindow):
   def open_com_click(self):    
     if not self.com_thread.isRunning():
       self.Open_Com.setEnabled(False)
-      # self.com_thread = Thread(target=self.com_conctrl)
       self.com_thread.start()
       
   
@@ -340,7 +334,9 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         self.Send_Data.setEnabled(True)
         self.Com_Band.setEnabled(False)  # 串口号和波特率变为不可选择
         self.Com_Port.setEnabled(False)
-        self.deal_rec_thread.start()
+        deal_rec_thread =  Thread(target = self.recieve_data)
+        deal_rec_thread.daemon = True
+        deal_rec_thread.start()
       else:
         QMessageBox.warning(None, "警告", "串口被占用或不存在！！！", QMessageBox.Ok) #不能在这里直接使用 
         
@@ -351,8 +347,9 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         auto_send_timer.pause()
         self.send_auto.setChecked(False)  #取消勾选自动发送
         self.send_freq.setEnabled(True)   #允许发送时间间隔设置
-        self.send_auto.setCheckable(False) #不允许自动发送按钮勾选
-      
+        
+        
+      self.send_auto.setCheckable(False) #不允许自动发送按钮勾选  每次关闭串口必须禁止  
       self.Send_Data.setEnabled(False)  #禁止发送按钮
       serial_cfg.put(com_state.CLOSE)
       self.Com_Band.setEnabled(True)  # 串口号和波特率变为可选择
