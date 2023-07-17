@@ -383,6 +383,8 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       if rx_data.empty() == False:
         data = rx_data.get()
         self.usart_rec_check.update(data)
+        
+      time.sleep(0.001)  #降低cpu占用
 
 
   #槽函数
