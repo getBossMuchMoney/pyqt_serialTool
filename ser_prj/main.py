@@ -206,8 +206,8 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     band = ["9600","19200","115200"]
     super().__init__()
     
-    self.send_thread = QThread()
-    self.send_thread.started.connect(self.send_data_process)
+    self.send_thread = Thread(target=self.send_data_process)
+    # self.send_thread.started.connect(self.send_data_process)
 
     self.now_enco_form = "UTF-8"
 
@@ -305,7 +305,8 @@ class Mywindow(QMainWindow, Ui_MainWindow):
   
   def auto_send_callback(self):
     if Com_Open_Flag == com_state.OPEN:
-      if not self.send_thread.isRunning():
+      if not self.send_thread.is_alive():
+        self.send_thread = Thread(target=self.send_data_process)
         self.send_thread.start()
 
 
@@ -389,8 +390,9 @@ class Mywindow(QMainWindow, Ui_MainWindow):
 
   #槽函数
   def send_data_click(self):
-    if not self.send_thread.isRunning():
-      not self.send_thread.start()
+    if not self.send_thread.is_alive():
+      self.send_thread = Thread(target=self.send_data_process)
+      self.send_thread.start()
 
 
 
@@ -426,7 +428,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
                 show_str = (''.join('?' for x in Data_Need_Send))
               
             show_str = '[' + timeStr + ']' + "发→◇" + show_str + '\n'
-            self.Data_Display.insertPlainText(show_str)
+            # self.Data_Display.insertPlainText(show_str)
             
           except:
             if self.send_auto.isChecked():
@@ -459,9 +461,9 @@ class Mywindow(QMainWindow, Ui_MainWindow):
             show_str = Data_Need_Send
                          
           show_str = '[' + timeStr + ']' + "发→◇" + show_str + '\n'       
-          self.Data_Display.insertPlainText(show_str)
+          # self.Data_Display.insertPlainText(show_str)
             
-    self.send_thread.quit()
+    # self.send_thread.quit()
         
           
   def Set_Display_Data(self, Data):
