@@ -214,6 +214,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     self.send_thread = QThread()
     self.send_thread.started.connect(self.send_data_process)
 
+    self.now_enco_form = "UTF-8"
 
     self.setupUi(self)
 
@@ -242,6 +243,15 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       self.Com_Band.addItem(band[i])
 
 
+  def switch_encodingFormat(self):
+    if self.encodingFormat.text() == "UTF-8":
+      self.now_enco_form = "GBK"
+      self.encodingFormat.setText("GBK")
+    else:
+      self.now_enco_form = "UTF-8"
+      self.encodingFormat.setText("UTF-8")
+      
+    
 
   def closeEvent(self,event):   #重写closeevent，确保窗口关闭后子进程被销毁不会留下后台         
     reply = QMessageBox.question(self,'串口助手beta版',"是否要退出程序？",QMessageBox.Yes | QMessageBox.No,QMessageBox.No)
@@ -414,7 +424,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
               show_str = (' '.join([hex(x)[2:].zfill(2) for x in Data_Need_Send])).upper()
             else:
               try:
-                show_str = str(Data_Need_Send, encoding="gbk")
+                show_str = str(Data_Need_Send, encoding=self.now_enco_form)
               except:
                 show_str = (''.join('?' for x in Data_Need_Send))
               
@@ -430,7 +440,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
             QMessageBox.warning(None, "警告", "待发送数据格式错误！！！", QMessageBox.Ok)
                        
         else:
-          tx_data.put(Data_Need_Send.encode("gbk"))  #发送
+          tx_data.put(Data_Need_Send.encode(self.now_enco_form))  #发送
           timeStr = get_strTime()
 
           send_fail = 0
@@ -445,7 +455,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
             return
         
           if self.recHexShow.isChecked():
-            show_str = Data_Need_Send.encode('gbk').hex()
+            show_str = Data_Need_Send.encode(self.now_enco_form).hex()
             show_str = bytes.fromhex(show_str)
             show_str = (' '.join([hex(x)[2:].zfill(2) for x in show_str])).upper()
           else:
@@ -462,7 +472,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       show_str = (' '.join([hex(x)[2:].zfill(2) for x in Data])).upper()
     else:
       try:
-        show_str = str(Data, encoding="gbk")
+        show_str = str(Data, encoding=self.now_enco_form)
       except:
         show_str = (''.join('?' for x in Data))
     
