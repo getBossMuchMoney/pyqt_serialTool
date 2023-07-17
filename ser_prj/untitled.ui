@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1137</width>
-    <height>710</height>
+    <width>1160</width>
+    <height>712</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -20,7 +20,7 @@
       <x>10</x>
       <y>20</y>
       <width>819</width>
-      <height>419</height>
+      <height>491</height>
      </rect>
     </property>
     <property name="textInteractionFlags">
@@ -34,7 +34,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>470</y>
+      <y>520</y>
       <width>69</width>
       <height>19</height>
      </rect>
@@ -44,10 +44,13 @@
     </property>
    </widget>
    <widget class="QPushButton" name="Send_Data">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>610</y>
+      <y>630</y>
       <width>93</width>
       <height>28</height>
      </rect>
@@ -60,9 +63,9 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>490</y>
+      <y>548</y>
       <width>819</width>
-      <height>109</height>
+      <height>71</height>
      </rect>
     </property>
    </widget>
@@ -129,7 +132,7 @@
     <property name="geometry">
      <rect>
       <x>840</x>
-      <y>100</y>
+      <y>170</y>
       <width>93</width>
       <height>28</height>
      </rect>
@@ -138,30 +141,33 @@
      <string>打开串口</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButton">
+   <widget class="QPushButton" name="ClearRecShow">
     <property name="geometry">
      <rect>
-      <x>750</x>
-      <y>450</y>
+      <x>650</x>
+      <y>520</y>
       <width>75</width>
       <height>23</height>
      </rect>
     </property>
     <property name="text">
-     <string>清空窗口</string>
+     <string>清接收区</string>
     </property>
    </widget>
    <widget class="QCheckBox" name="recHexShow">
     <property name="geometry">
      <rect>
       <x>840</x>
-      <y>400</y>
+      <y>500</y>
       <width>81</width>
       <height>16</height>
      </rect>
     </property>
     <property name="text">
      <string>Hex显示</string>
+    </property>
+    <property name="checkable">
+     <bool>true</bool>
     </property>
     <property name="checked">
      <bool>true</bool>
@@ -174,7 +180,7 @@
     <property name="geometry">
      <rect>
       <x>840</x>
-      <y>500</y>
+      <y>550</y>
       <width>81</width>
       <height>16</height>
      </rect>
@@ -186,13 +192,90 @@
      <bool>false</bool>
     </property>
    </widget>
+   <widget class="QPushButton" name="ClearSendShow">
+    <property name="geometry">
+     <rect>
+      <x>750</x>
+      <y>520</y>
+      <width>75</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>清发送区</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="ComReflash">
+    <property name="geometry">
+     <rect>
+      <x>960</x>
+      <y>170</y>
+      <width>101</width>
+      <height>28</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>刷新串口列表</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="send_freq">
+    <property name="geometry">
+     <rect>
+      <x>940</x>
+      <y>580</y>
+      <width>71</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="echoMode">
+     <enum>QLineEdit::Normal</enum>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    </property>
+    <property name="dragEnabled">
+     <bool>false</bool>
+    </property>
+    <property name="readOnly">
+     <bool>false</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_5">
+    <property name="geometry">
+     <rect>
+      <x>1020</x>
+      <y>580</y>
+      <width>54</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>ms/次</string>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="send_auto">
+    <property name="geometry">
+     <rect>
+      <x>840</x>
+      <y>580</y>
+      <width>91</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>定时发送</string>
+    </property>
+    <property name="checkable">
+     <bool>false</bool>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1137</width>
+     <width>1160</width>
      <height>26</height>
     </rect>
    </property>
@@ -209,7 +292,7 @@
    <hints>
     <hint type="sourcelabel">
      <x>65</x>
-     <y>645</y>
+     <y>671</y>
     </hint>
     <hint type="destinationlabel">
      <x>138</x>
@@ -225,7 +308,7 @@
    <hints>
     <hint type="sourcelabel">
      <x>884</x>
-     <y>150</y>
+     <y>196</y>
     </hint>
     <hint type="destinationlabel">
      <x>926</x>
@@ -234,14 +317,14 @@
    </hints>
   </connection>
   <connection>
-   <sender>pushButton</sender>
+   <sender>ClearRecShow</sender>
    <signal>clicked()</signal>
    <receiver>Data_Display</receiver>
    <slot>clear()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>779</x>
-     <y>487</y>
+     <x>669</x>
+     <y>546</y>
     </hint>
     <hint type="destinationlabel">
      <x>675</x>
@@ -265,11 +348,45 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>ClearSendShow</sender>
+   <signal>clicked()</signal>
+   <receiver>Send_Data_Display</receiver>
+   <slot>clear()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>776</x>
+     <y>546</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>744</x>
+     <y>574</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>send_auto</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>send_auto_click()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>845</x>
+     <y>618</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>850</x>
+     <y>637</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>cal_fuc()</slot>
   <slot>send_data_click()</slot>
   <slot>open_com_click()</slot>
   <slot>drag_scroll()</slot>
+  <slot>send_auto_click()</slot>
+  <slot>text_input_trigger()</slot>
  </slots>
 </ui>

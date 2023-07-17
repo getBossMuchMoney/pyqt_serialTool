@@ -1,1 +1,4 @@
 ser_prj/__pycache__/
+ser_prj/main.spec
+ser_prj/build/
+ser_prj/dist/
