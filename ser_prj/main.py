@@ -369,11 +369,8 @@ class Mywindow(QMainWindow, Ui_MainWindow):
   def recieve_data(self):
     global rx_data
 
-    while True:
-
-      if Com_Open_Flag == com_state.CLOSE:
-          break;
-      
+    while not Com_Open_Flag == com_state.CLOSE:
+  
       if rx_data.empty() == False:
         data = rx_data.get()
         self.Set_Display_Data(data)
