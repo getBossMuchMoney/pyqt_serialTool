@@ -13,22 +13,23 @@ from datetime import datetime
 from PyQt5.QtGui import QTextCursor,QIntValidator
 from myTimer import msTimer
 
-#自定义信号量
-class usart_recUpdate(QObject):
-  update_signal = pyqtSignal(bytes)
+#自定义信号量       
+class ui_show(QObject):
+  update_signal = pyqtSignal(str)
  
   def __init__(self):
-        QObject.__init__(self)
+    QObject.__init__(self)
  
   def update(self,data):
-        self.update_signal.emit(data)
+    self.update_signal.emit(data)
+
 
  
 class state_check(QObject):
   update_signal = pyqtSignal()
  
   def __init__(self):
-        QObject.__init__(self)
+    QObject.__init__(self)
  
   def update(self):
     print("dasdasdas")
@@ -207,14 +208,14 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     super().__init__()
     
     self.send_thread = Thread(target=self.send_data_process)
-    # self.send_thread.started.connect(self.send_data_process)
 
     self.now_enco_form = "UTF-8"
+    
+    self.ui_update = ui_show()
+    self.ui_update.update_signal.connect(self.ui_show_refresh)
 
     self.setupUi(self)
 
-    self.usart_rec_check = usart_recUpdate()
-    self.usart_rec_check.update_signal.connect(self.Set_Display_Data)
     
     # 创建一个整数验证器
     validator = QIntValidator()
@@ -226,8 +227,8 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     self.ComReflash.clicked.connect(self.com_reflash)
     self.combuf = 0
     self.COM_List = 0
-    self.com_thread = QThread()
-    self.com_thread.started.connect(self.com_conctrl)
+    
+    self.com_thread = Thread(target=self.com_conctrl)
 
 
     self.com_reflash()
@@ -236,6 +237,12 @@ class Mywindow(QMainWindow, Ui_MainWindow):
 
     for i in range(0,len(band)):
       self.Com_Band.addItem(band[i])
+
+
+  #ui刷新槽函数
+  def ui_show_refresh(self,data):
+    self.Data_Display.insertPlainText(data)
+    
 
 
   def switch_encodingFormat(self):
@@ -284,7 +291,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
           QMessageBox.warning(None, "警告", "发送时间间隔不能为零！！！", QMessageBox.Ok)
           return
         
-        auto_send_timer.change(self.auto_send_callback,autoSendTime)
+        auto_send_timer.change(self.send_data_click,autoSendTime)
         auto_send_timer.start()
       else:
         self.send_auto.setChecked(False)  #取消勾选自动发送
@@ -303,18 +310,11 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       print("定时发送关闭")
      
   
-  def auto_send_callback(self):
-    if Com_Open_Flag == com_state.OPEN:
-      if not self.send_thread.is_alive():
-        self.send_thread = Thread(target=self.send_data_process)
-        self.send_thread.start()
-
-
-
   #串口按钮点击槽函数
   def open_com_click(self):    
-    if not self.com_thread.isRunning():
+    if not self.com_thread.is_alive():
       self.Open_Com.setEnabled(False)
+      self.com_thread = Thread(target=self.com_conctrl)
       self.com_thread.start()
       
   
@@ -344,7 +344,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         deal_rec_thread.daemon = True
         deal_rec_thread.start()
       else:
-        QMessageBox.warning(None, "警告", "串口被占用或不存在！！！", QMessageBox.Ok) #不能在这里直接使用 
+        QMessageBox.warning(None, "警告", "串口被占用或不存在！！！", QMessageBox.Ok)
         
     else:
       print("点击了关闭串口按钮")
@@ -362,10 +362,8 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       self.Com_Port.setEnabled(True)
       usart_process.join()  #需加入.join(),等待串口发送和接收进程结束以及数据队列清空
       self.Open_Com.setText("打开串口")
-     
-      
+       
     self.Open_Com.setEnabled(True)
-    self.com_thread.quit()
    
 
   def recieve_data(self):
@@ -378,7 +376,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       
       if rx_data.empty() == False:
         data = rx_data.get()
-        self.usart_rec_check.update(data)
+        self.Set_Display_Data(data)
         
       time.sleep(0.001)  #降低cpu占用
 
@@ -390,10 +388,10 @@ class Mywindow(QMainWindow, Ui_MainWindow):
 
   #槽函数
   def send_data_click(self):
-    if not self.send_thread.is_alive():
-      self.send_thread = Thread(target=self.send_data_process)
-      self.send_thread.start()
-
+    if Com_Open_Flag == com_state.OPEN:
+      if not self.send_thread.is_alive():
+        self.send_thread = Thread(target=self.send_data_process)
+        self.send_thread.start()
 
 
   def send_data_process(self):
@@ -412,11 +410,9 @@ class Mywindow(QMainWindow, Ui_MainWindow):
             try:
               if send_fail == usart_workState.get(timeout = 1):  #等待一帧发送完毕，超时一秒 
                 print("发送失败")
-                self.auto_send_thread.quit()
                 return      
             except:
               print("发送超时")
-              self.auto_send_thread.quit()
               return
                  
             if self.recHexShow.isChecked():
@@ -428,7 +424,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
                 show_str = (''.join('?' for x in Data_Need_Send))
               
             show_str = '[' + timeStr + ']' + "发→◇" + show_str + '\n'
-            # self.Data_Display.insertPlainText(show_str)
+            self.ui_update.update(show_str)
             
           except:
             if self.send_auto.isChecked():
@@ -446,11 +442,9 @@ class Mywindow(QMainWindow, Ui_MainWindow):
           try:
             if send_fail == usart_workState.get(timeout = 1):  #等待一帧发送完毕 
               print("发送失败")
-              self.auto_send_thread.quit()
               return      
           except:
             print("发送超时")
-            self.auto_send_thread.quit()
             return
         
           if self.recHexShow.isChecked():
@@ -461,9 +455,8 @@ class Mywindow(QMainWindow, Ui_MainWindow):
             show_str = Data_Need_Send
                          
           show_str = '[' + timeStr + ']' + "发→◇" + show_str + '\n'       
-          # self.Data_Display.insertPlainText(show_str)
+          self.ui_update.update(show_str)
             
-    # self.send_thread.quit()
         
           
   def Set_Display_Data(self, Data):
@@ -477,7 +470,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     
     timeStr = get_strTime()
     show_str = '[' + timeStr + ']' + "收←◆" + show_str + '\n'
-    self.Data_Display.insertPlainText(show_str)
+    self.ui_update.update(show_str)
 
 
 def ui_process():
