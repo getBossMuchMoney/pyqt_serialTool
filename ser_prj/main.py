@@ -32,7 +32,6 @@ class state_check(QObject):
     QObject.__init__(self)
  
   def update(self):
-    print("dasdasdas")
     self.update_signal.emit()
 
 
