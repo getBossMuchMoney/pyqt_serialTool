@@ -13,25 +13,34 @@ from datetime import datetime
 from PyQt5.QtGui import QTextCursor,QIntValidator
 from myTimer import msTimer
 
-#自定义信号量
-class usart_recUpdate(QObject):
-  update_signal = pyqtSignal(bytes)
+#自定义信号量       
+class ui_show(QObject):
+  update_signal = pyqtSignal(str)
  
   def __init__(self):
-        QObject.__init__(self)
+    QObject.__init__(self)
  
   def update(self,data):
-        self.update_signal.emit(data)
+    self.update_signal.emit(data)
+
+
+class err_code_check(QObject):
+  update_signal = pyqtSignal(int)
+ 
+  def __init__(self):
+    QObject.__init__(self)
+ 
+  def update(self,index):
+    self.update_signal.emit(index)
 
  
 class state_check(QObject):
   update_signal = pyqtSignal()
  
   def __init__(self):
-        QObject.__init__(self)
+    QObject.__init__(self)
  
   def update(self):
-    print("dasdasdas")
     self.update_signal.emit()
 
 
@@ -46,12 +55,19 @@ class WorkThread(QThread):
       {}
 
 
+class com_err_code(IntEnum):
+  AUTO_SEND_TIME_SET_ERR = 0
+  AUTO_SEND_TIME_NONE_ERR = 1
+  AUTO_SEND_OPEN_ERR = 2
+  COM_OPEN_ERR = 3
+  SEND_DATA_FORMAT_ERR = 4
 
+    
  
 
 class com_state(IntEnum):
-    CLOSE = 0
-    OPEN = 1
+  CLOSE = 0
+  OPEN = 1
 
 
 #父进程全局变量
@@ -66,7 +82,7 @@ tx_data = Queue()
 comState = Value('i',com_state.CLOSE) 
 comListTimer = msTimer(None,0)
 auto_send_timer = msTimer(None,0)
-
+working_com = None
 
 
 
@@ -87,10 +103,8 @@ def clear(q):
 #串口接收数据处理线程
 def rec_deal(recClose_event,rx_data):
   global sSerial
-  while True:
-    if recClose_event.is_set():
-      break
-    
+  while not recClose_event.is_set(): 
+
     data = sSerial.read_all()
     if len(data)>0:
       rx_data.put(data)
@@ -100,11 +114,8 @@ def rec_deal(recClose_event,rx_data):
 
 def send_deal(sendClose_event,usart_workState,tx_data):
   global sSerial
-  while True:
-    
-    if sendClose_event.is_set():
-      break  
-     
+  while not sendClose_event.is_set():
+       
     if tx_data.empty() == False:
       data = tx_data.get()
       try:
@@ -138,8 +149,8 @@ def usart_setting(serial_cfg,usart_workState,rx_data,tx_data):
     send_thread.start()
     usart_workState.put(com_state.OPEN)
     while True:
-      if serial_cfg.empty() == False:
-        if serial_cfg.get(block = False) == com_state.CLOSE:
+      # if serial_cfg.empty() == False:
+        if serial_cfg.get() == com_state.CLOSE:
           print("串口关闭")
           recClose_event.set()
           sendClose_event.set()
@@ -149,7 +160,7 @@ def usart_setting(serial_cfg,usart_workState,rx_data,tx_data):
           clear(tx_data)
           sSerial.close()
           break  
-      time.sleep(0.001)               
+      # time.sleep(0.001)               
 
          
 
@@ -211,15 +222,18 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     band = ["9600","19200","115200"]
     super().__init__()
     
-    self.send_thread = QThread()
-    self.send_thread.started.connect(self.send_data_process)
+    self.send_thread = Thread(target=self.send_data_process)
 
     self.now_enco_form = "UTF-8"
+    
+    self.ui_update = ui_show()
+    self.ui_update.update_signal.connect(self.ui_show_refresh)
+
+    self.comErr = err_code_check()
+    self.comErr.update_signal.connect(self.err_code_warning)
 
     self.setupUi(self)
 
-    self.usart_rec_check = usart_recUpdate()
-    self.usart_rec_check.update_signal.connect(self.Set_Display_Data)
     
     # 创建一个整数验证器
     validator = QIntValidator()
@@ -231,8 +245,8 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     self.ComReflash.clicked.connect(self.com_reflash)
     self.combuf = 0
     self.COM_List = 0
-    self.com_thread = QThread()
-    self.com_thread.started.connect(self.com_conctrl)
+    
+    self.com_thread = Thread(target=self.com_conctrl)
 
 
     self.com_reflash()
@@ -243,6 +257,12 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       self.Com_Band.addItem(band[i])
 
 
+  #ui刷新槽函数
+  def ui_show_refresh(self,data):
+    self.Data_Display.insertPlainText(data)
+    
+
+
   def switch_encodingFormat(self):
     if self.encodingFormat.text() == "UTF-8":
       self.now_enco_form = "GBK"
@@ -250,9 +270,27 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     else:
       self.now_enco_form = "UTF-8"
       self.encodingFormat.setText("UTF-8")
-      
-    
 
+
+  def err_code_warning(self,index):
+    match index:
+      case com_err_code.AUTO_SEND_TIME_SET_ERR:
+        QMessageBox.warning(None, "警告", "发送时间间隔不能为零！！！", QMessageBox.Ok)
+
+      case com_err_code.AUTO_SEND_TIME_NONE_ERR:
+        QMessageBox.warning(None, "警告", "请设置发送时间间隔！！！", QMessageBox.Ok)
+
+      case com_err_code.AUTO_SEND_OPEN_ERR:
+        QMessageBox.warning(None, "警告", "只允许连接后开启！！！", QMessageBox.Ok)
+
+      case com_err_code.COM_OPEN_ERR:
+        QMessageBox.warning(None, "警告", "串口被占用或不存在等其他情况！！！", QMessageBox.Ok)
+   
+      case com_err_code.SEND_DATA_FORMAT_ERR:
+        QMessageBox.warning(None, "警告", "待发送数据格式错误！！！", QMessageBox.Ok)
+
+      
+  
   def closeEvent(self,event):   #重写closeevent，确保窗口关闭后子进程被销毁不会留下后台         
     reply = QMessageBox.question(self,'串口助手beta版',"是否要退出程序？",QMessageBox.Yes | QMessageBox.No,QMessageBox.No)
     if reply == QMessageBox.Yes:
@@ -265,13 +303,46 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       event.ignore()
 
   
-  def com_reflash(self): 
+  def com_reflash(self):
+    working_com_check = 0
+    global Com_Open_Flag,working_com
     self.combuf = Get_Com_List()  # 获取串口列表
     if not  self.combuf == self.COM_List:
       self.COM_List = self.combuf
       self.Com_Port.clear()           #清除串口列表显示内容
       for i in range(0, len(self.COM_List)):  # 将列表导入到下拉框
         self.Com_Port.addItem(self.COM_List[i].name)
+
+        if not working_com == None:
+        
+          if working_com == self.COM_List[i].name:
+             working_com_check = 1
+
+          if working_com_check == 0 and i == (len(self.COM_List) - 1):
+            self.close_com()
+            self.Open_Com.setEnabled(True)
+            # QMessageBox.warning(None, "警告", "选择的串口已不存在！！！", QMessageBox.Ok)
+            self.comErr.update(com_err_code.COM_OPEN_ERR)
+
+  
+  def close_com(self):
+    global Com_Open_Flag,working_com
+    Com_Open_Flag = com_state.CLOSE
+    working_com = None
+    if self.send_auto.isChecked():
+      auto_send_timer.pause()
+      self.send_auto.setChecked(False)  #取消勾选自动发送
+      self.send_freq.setEnabled(True)   #允许发送时间间隔设置
+        
+        
+    self.send_auto.setCheckable(False) #不允许自动发送按钮勾选  每次关闭串口必须禁止  
+    self.Send_Data.setEnabled(False)  #禁止发送按钮
+    serial_cfg.put(com_state.CLOSE)
+    self.Com_Band.setEnabled(True)  # 串口号和波特率变为可选择
+    self.Com_Port.setEnabled(True)
+    usart_process.join()  #需加入.join(),等待串口发送和接收进程结束以及数据队列清空
+    self.Open_Com.setText("打开串口")
+
     
   
   #槽函数
@@ -286,19 +357,22 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         if autoSendTime == 0:
           self.send_auto.setChecked(False)  #取消勾选自动发送
           self.send_freq.setEnabled(True) #解锁自动发送时间输入
-          QMessageBox.warning(None, "警告", "发送时间间隔不能为零！！！", QMessageBox.Ok)
+          # QMessageBox.warning(None, "警告", "发送时间间隔不能为零！！！", QMessageBox.Ok)
+          self.comErr.update(com_err_code.AUTO_SEND_TIME_SET_ERR)
           return
         
-        auto_send_timer.change(self.auto_send_callback,autoSendTime)
+        auto_send_timer.change(self.send_data_click,autoSendTime)
         auto_send_timer.start()
       else:
         self.send_auto.setChecked(False)  #取消勾选自动发送
         print("定时发送关闭")
-        QMessageBox.warning(None, "警告", "请设置发送时间间隔！！！", QMessageBox.Ok)
+        # QMessageBox.warning(None, "警告", "请设置发送时间间隔！！！", QMessageBox.Ok)
+        self.comErr.update(com_err_code.AUTO_SEND_TIME_NONE_ERR)
       
     else:
       if Com_Open_Flag == com_state.CLOSE:
-        QMessageBox.warning(None, "警告", "只允许连接后开启！！！", QMessageBox.Ok)
+        # QMessageBox.warning(None, "警告", "只允许连接后开启！！！", QMessageBox.Ok)
+        self.comErr.update(com_err_code.AUTO_SEND_OPEN_ERR)
       try:
         auto_send_timer.pause()
       except:
@@ -308,23 +382,17 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       print("定时发送关闭")
      
   
-  def auto_send_callback(self):
-    if Com_Open_Flag == com_state.OPEN:
-      if not self.send_thread.isRunning():
-        self.send_thread.start()
-
-
-
   #串口按钮点击槽函数
   def open_com_click(self):    
-    if not self.com_thread.isRunning():
+    if not self.com_thread.is_alive():
       self.Open_Com.setEnabled(False)
+      self.com_thread = Thread(target=self.com_conctrl)
       self.com_thread.start()
       
   
   def com_conctrl(self):
     global custom_serial  # 全局变量，需要加global
-    global Com_Open_Flag
+    global Com_Open_Flag,working_com
     global usart_process,serial_cfg,rx_data,tx_data
     
     if self.Open_Com.text() == "打开串口":
@@ -339,6 +407,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       usart_process.start()
       Com_Open_Flag = usart_workState.get(block=True,timeout=3)
       if Com_Open_Flag == com_state.OPEN:
+        working_com = comPort
         self.send_auto.setCheckable(True)   #允许自动发送按钮勾选
         self.Open_Com.setText("关闭串口")
         self.Send_Data.setEnabled(True)
@@ -348,41 +417,24 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         deal_rec_thread.daemon = True
         deal_rec_thread.start()
       else:
-        QMessageBox.warning(None, "警告", "串口被占用或不存在！！！", QMessageBox.Ok) #不能在这里直接使用 
+        # QMessageBox.warning(None, "警告", "串口被占用或不存在！！！", QMessageBox.Ok)
+        self.comErr.update(com_err_code.COM_OPEN_ERR)
         
     else:
       print("点击了关闭串口按钮")
-      Com_Open_Flag = com_state.CLOSE
-      if self.send_auto.isChecked():
-        auto_send_timer.pause()
-        self.send_auto.setChecked(False)  #取消勾选自动发送
-        self.send_freq.setEnabled(True)   #允许发送时间间隔设置
-        
-        
-      self.send_auto.setCheckable(False) #不允许自动发送按钮勾选  每次关闭串口必须禁止  
-      self.Send_Data.setEnabled(False)  #禁止发送按钮
-      serial_cfg.put(com_state.CLOSE)
-      self.Com_Band.setEnabled(True)  # 串口号和波特率变为可选择
-      self.Com_Port.setEnabled(True)
-      usart_process.join()  #需加入.join(),等待串口发送和接收进程结束以及数据队列清空
-      self.Open_Com.setText("打开串口")
-     
-      
+      self.close_com()
+       
     self.Open_Com.setEnabled(True)
-    self.com_thread.quit()
    
 
   def recieve_data(self):
     global rx_data
 
-    while True:
-
-      if Com_Open_Flag == com_state.CLOSE:
-          break;
-      
+    while not Com_Open_Flag == com_state.CLOSE:
+  
       if rx_data.empty() == False:
         data = rx_data.get()
-        self.usart_rec_check.update(data)
+        self.Set_Display_Data(data)
         
       time.sleep(0.001)  #降低cpu占用
 
@@ -394,9 +446,10 @@ class Mywindow(QMainWindow, Ui_MainWindow):
 
   #槽函数
   def send_data_click(self):
-    if not self.send_thread.isRunning():
-      not self.send_thread.start()
-
+    if Com_Open_Flag == com_state.OPEN:
+      if not self.send_thread.is_alive():
+        self.send_thread = Thread(target=self.send_data_process)
+        self.send_thread.start()
 
 
   def send_data_process(self):
@@ -415,11 +468,9 @@ class Mywindow(QMainWindow, Ui_MainWindow):
             try:
               if send_fail == usart_workState.get(timeout = 1):  #等待一帧发送完毕，超时一秒 
                 print("发送失败")
-                self.auto_send_thread.quit()
                 return      
             except:
               print("发送超时")
-              self.auto_send_thread.quit()
               return
                  
             if self.recHexShow.isChecked():
@@ -431,7 +482,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
                 show_str = (''.join('?' for x in Data_Need_Send))
               
             show_str = '[' + timeStr + ']' + "发→◇" + show_str + '\n'
-            self.Data_Display.insertPlainText(show_str)
+            self.ui_update.update(show_str)
             
           except:
             if self.send_auto.isChecked():
@@ -439,7 +490,8 @@ class Mywindow(QMainWindow, Ui_MainWindow):
               self.send_auto.setChecked(False)  #取消勾选自动发送 
               self.send_freq.setEnabled(True)   #允许发送时间间隔设置
                
-            QMessageBox.warning(None, "警告", "待发送数据格式错误！！！", QMessageBox.Ok)
+            # QMessageBox.warning(None, "警告", "待发送数据格式错误！！！", QMessageBox.Ok)
+            self.comErr.update(com_err_code.SEND_DATA_FORMAT_ERR)
                        
         else:
           tx_data.put(Data_Need_Send.encode(self.now_enco_form))  #发送
@@ -449,11 +501,9 @@ class Mywindow(QMainWindow, Ui_MainWindow):
           try:
             if send_fail == usart_workState.get(timeout = 1):  #等待一帧发送完毕 
               print("发送失败")
-              self.auto_send_thread.quit()
               return      
           except:
             print("发送超时")
-            self.auto_send_thread.quit()
             return
         
           if self.recHexShow.isChecked():
@@ -464,9 +514,8 @@ class Mywindow(QMainWindow, Ui_MainWindow):
             show_str = Data_Need_Send
                          
           show_str = '[' + timeStr + ']' + "发→◇" + show_str + '\n'       
-          self.Data_Display.insertPlainText(show_str)
+          self.ui_update.update(show_str)
             
-    self.send_thread.quit()
         
           
   def Set_Display_Data(self, Data):
@@ -480,7 +529,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     
     timeStr = get_strTime()
     show_str = '[' + timeStr + ']' + "收←◆" + show_str + '\n'
-    self.Data_Display.insertPlainText(show_str)
+    self.ui_update.update(show_str)
 
 
 def ui_process():
