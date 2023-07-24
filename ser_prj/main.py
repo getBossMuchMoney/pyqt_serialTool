@@ -109,7 +109,6 @@ def rec_deal(recClose_event,rx_data):
     if len(data)>0:
       rx_data.put(data)
       
-    time.sleep(0.001)  #降低cpu占用率
 
 
 def send_deal(sendClose_event,usart_workState,tx_data):
