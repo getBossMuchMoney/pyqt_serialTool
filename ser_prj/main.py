@@ -108,6 +108,8 @@ def rec_deal(recClose_event,rx_data):
     data = sSerial.read_all()
     if len(data)>0:
       rx_data.put(data)
+    else:
+      time.sleep(0.001)
       
 
 
@@ -125,7 +127,8 @@ def send_deal(sendClose_event,usart_workState,tx_data):
         send_fail = 0
         usart_workState.put(send_fail)
           
-    time.sleep(0.001)  #降低cpu占用率
+    else:
+      time.sleep(0.001)  #降低cpu占用率
 
 
 
@@ -165,7 +168,7 @@ def usart_setting(serial_cfg,usart_workState,rx_data,tx_data):
 
  # 获取串口列表
 def Get_Com_List():
-    return list(list_ports.comports()) 
+  return list(list_ports.comports()) 
   
   
   
@@ -435,7 +438,8 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         data = rx_data.get()
         self.Set_Display_Data(data)
         
-      time.sleep(0.001)  #降低cpu占用
+      else:
+        time.sleep(0.001)  #降低cpu占用
 
 
   #槽函数
