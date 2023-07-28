@@ -84,11 +84,24 @@ class Ui_MainWindow(object):
         self.send_auto.setCheckable(False)
         self.send_auto.setObjectName("send_auto")
         self.encodingFormat = QtWidgets.QPushButton(self.centralwidget)
-        self.encodingFormat.setGeometry(QtCore.QRect(900, 430, 71, 28))
+        self.encodingFormat.setGeometry(QtCore.QRect(900, 437, 71, 31))
         self.encodingFormat.setObjectName("encodingFormat")
         self.label_6 = QtWidgets.QLabel(self.centralwidget)
-        self.label_6.setGeometry(QtCore.QRect(840, 430, 61, 31))
+        self.label_6.setGeometry(QtCore.QRect(840, 440, 61, 31))
         self.label_6.setObjectName("label_6")
+        self.open_file_click = QtWidgets.QToolButton(self.centralwidget)
+        self.open_file_click.setGeometry(QtCore.QRect(900, 340, 47, 31))
+        self.open_file_click.setObjectName("open_file_click")
+        self.label_7 = QtWidgets.QLabel(self.centralwidget)
+        self.label_7.setGeometry(QtCore.QRect(840, 340, 72, 31))
+        self.label_7.setObjectName("label_7")
+        self.textEdit = QtWidgets.QTextEdit(self.centralwidget)
+        self.textEdit.setGeometry(QtCore.QRect(960, 340, 191, 31))
+        self.textEdit.setTextInteractionFlags(QtCore.Qt.TextSelectableByKeyboard|QtCore.Qt.TextSelectableByMouse)
+        self.textEdit.setObjectName("textEdit")
+        self.pushButton = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButton.setGeometry(QtCore.QRect(900, 380, 93, 28))
+        self.pushButton.setObjectName("pushButton")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 1160, 26))
@@ -106,6 +119,7 @@ class Ui_MainWindow(object):
         self.ClearSendShow.clicked.connect(self.Send_Data_Display.clear) # type: ignore
         self.send_auto.clicked.connect(MainWindow.send_auto_click) # type: ignore
         self.encodingFormat.clicked.connect(MainWindow.switch_encodingFormat) # type: ignore
+        self.open_file_click.clicked.connect(MainWindow.open_file) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -126,3 +140,6 @@ class Ui_MainWindow(object):
         self.send_auto.setText(_translate("MainWindow", "定时发送"))
         self.encodingFormat.setText(_translate("MainWindow", "UTF-8"))
         self.label_6.setText(_translate("MainWindow", "编码格式"))
+        self.open_file_click.setText(_translate("MainWindow", "..."))
+        self.label_7.setText(_translate("MainWindow", "选择文件"))
+        self.pushButton.setText(_translate("MainWindow", "发送文件"))

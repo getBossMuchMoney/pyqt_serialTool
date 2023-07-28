@@ -2,7 +2,7 @@ import sys,os
 from serial import Serial
 from serial.tools import list_ports
 from threading import Thread,Event
-from PyQt5.QtWidgets import QApplication,QMainWindow,QMessageBox
+from PyQt5.QtWidgets import QApplication,QMainWindow,QMessageBox,QFileDialog
 from untitled_ui import Ui_MainWindow
 from PyQt5.QtCore import Qt,pyqtSignal,QObject,QThread
 import multiprocessing
@@ -85,8 +85,6 @@ auto_send_timer = msTimer(None,0)
 working_com = None
 
 
-
-
 #子进程全局变量
 sSerial = 0
 recClose_event = Event()
@@ -151,21 +149,19 @@ def usart_setting(serial_cfg,usart_workState,rx_data,tx_data):
     send_thread.start()
     usart_workState.put(com_state.OPEN)
     while True:
-      # if serial_cfg.empty() == False:
-        if serial_cfg.get() == com_state.CLOSE:
-          print("串口关闭")
-          recClose_event.set()
-          sendClose_event.set()
-          rec_thread.join()
-          send_thread.join()
-          clear(rx_data)
-          clear(tx_data)
-          sSerial.close()
-          break  
-      # time.sleep(0.001)               
-
+      if serial_cfg.get() == com_state.CLOSE:
+        print("串口关闭")
+        recClose_event.set()
+        sendClose_event.set()
+        rec_thread.join()
+        send_thread.join()
+        clear(rx_data)
+        clear(tx_data)
+        sSerial.close()
+        break  
          
 
+        
  # 获取串口列表
 def Get_Com_List():
   return list(list_ports.comports()) 
@@ -257,6 +253,10 @@ class Mywindow(QMainWindow, Ui_MainWindow):
 
     for i in range(0,len(band)):
       self.Com_Band.addItem(band[i])
+
+  def open_file(self):
+     fname = QFileDialog.getOpenFileName(self, '打开文件', '/')# filter='*.txt'
+
 
 
   #ui刷新槽函数
