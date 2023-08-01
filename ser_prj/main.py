@@ -255,7 +255,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       self.Com_Band.addItem(band[i])
 
   def open_file(self):
-     fname = QFileDialog.getOpenFileName(self, '打开文件', '/')# filter='*.txt'
+     fname = QFileDialog.getOpenFileName(self, '打开文件', '/')  # filter='*.txt'
 
 
 
@@ -468,6 +468,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
             tx_data.put(Data_T)
             timeStr = get_strTime()
 
+            send_fail = 0
             try:
               if send_fail == usart_workState.get(timeout = 1):  #等待一帧发送完毕，超时一秒 
                 print("发送失败")
