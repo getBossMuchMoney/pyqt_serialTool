@@ -95,13 +95,14 @@ class Ui_MainWindow(object):
         self.label_7 = QtWidgets.QLabel(self.centralwidget)
         self.label_7.setGeometry(QtCore.QRect(840, 340, 72, 31))
         self.label_7.setObjectName("label_7")
-        self.textEdit = QtWidgets.QTextEdit(self.centralwidget)
-        self.textEdit.setGeometry(QtCore.QRect(960, 340, 191, 31))
-        self.textEdit.setTextInteractionFlags(QtCore.Qt.TextSelectableByKeyboard|QtCore.Qt.TextSelectableByMouse)
-        self.textEdit.setObjectName("textEdit")
-        self.pushButton = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton.setGeometry(QtCore.QRect(900, 380, 93, 28))
-        self.pushButton.setObjectName("pushButton")
+        self.file_selected = QtWidgets.QTextEdit(self.centralwidget)
+        self.file_selected.setGeometry(QtCore.QRect(960, 340, 191, 31))
+        self.file_selected.setTextInteractionFlags(QtCore.Qt.NoTextInteraction)
+        self.file_selected.setObjectName("file_selected")
+        self.send_file_click = QtWidgets.QPushButton(self.centralwidget)
+        self.send_file_click.setEnabled(False)
+        self.send_file_click.setGeometry(QtCore.QRect(900, 380, 93, 28))
+        self.send_file_click.setObjectName("send_file_click")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 1160, 26))
@@ -120,6 +121,7 @@ class Ui_MainWindow(object):
         self.send_auto.clicked.connect(MainWindow.send_auto_click) # type: ignore
         self.encodingFormat.clicked.connect(MainWindow.switch_encodingFormat) # type: ignore
         self.open_file_click.clicked.connect(MainWindow.open_file) # type: ignore
+        self.send_file_click.clicked.connect(MainWindow.send_file) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -142,4 +144,4 @@ class Ui_MainWindow(object):
         self.label_6.setText(_translate("MainWindow", "编码格式"))
         self.open_file_click.setText(_translate("MainWindow", "..."))
         self.label_7.setText(_translate("MainWindow", "选择文件"))
-        self.pushButton.setText(_translate("MainWindow", "发送文件"))
+        self.send_file_click.setText(_translate("MainWindow", "发送文件"))

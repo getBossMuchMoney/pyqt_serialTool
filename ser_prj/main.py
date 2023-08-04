@@ -223,6 +223,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     self.send_thread = Thread(target=self.send_data_process)
 
     self.now_enco_form = "UTF-8"
+    self.file_data_buf = list()
     
     self.ui_update = ui_show()
     self.ui_update.update_signal.connect(self.ui_show_refresh)
@@ -255,9 +256,32 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       self.Com_Band.addItem(band[i])
 
   def open_file(self):
-     fname = QFileDialog.getOpenFileName(self, '打开文件', '/')  # filter='*.txt'
+    fname = QFileDialog.getOpenFileName(self, '打开文件', '/')  # filter='*.txt'
+    if fname[0]:
+      with  open(fname[0], 'r') as f:
+        self.file_selected.clear()
+        self.file_selected.insertPlainText(fname[0])
+        self.file_data_buf = f.read()
+        print("转化前数据类型：",type(self.file_data_buf))
+        self.file_data_buf = self.file_data_buf.encode(self.now_enco_form)
+        print("数据类型：",type(self.file_data_buf))
+        # print("数据：",self.file_data_buf)
+  
 
-
+  def send_file(self):
+    if len(self.file_data_buf) > 0:
+      tx_data.put(self.file_data_buf)
+      send_fail = 0
+      try:
+        if send_fail == usart_workState.get(timeout = 5):  #等待一帧发送完毕，超时一秒 
+          print("发送失败")
+          return      
+      except:
+        print("发送超时")
+        return
+      self.file_selected.clear()
+      self.file_data_buf = list()
+      
 
   #ui刷新槽函数
   def ui_show_refresh(self,data):
@@ -336,7 +360,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       self.send_auto.setChecked(False)  #取消勾选自动发送
       self.send_freq.setEnabled(True)   #允许发送时间间隔设置
         
-        
+    self.send_file_click.setEnabled(False)    
     self.send_auto.setCheckable(False) #不允许自动发送按钮勾选  每次关闭串口必须禁止  
     self.Send_Data.setEnabled(False)  #禁止发送按钮
     serial_cfg.put(com_state.CLOSE)
@@ -413,6 +437,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         self.send_auto.setCheckable(True)   #允许自动发送按钮勾选
         self.Open_Com.setText("关闭串口")
         self.Send_Data.setEnabled(True)
+        self.send_file_click.setEnabled(True)
         self.Com_Band.setEnabled(False)  # 串口号和波特率变为不可选择
         self.Com_Port.setEnabled(False)
         deal_rec_thread =  Thread(target = self.recieve_data)

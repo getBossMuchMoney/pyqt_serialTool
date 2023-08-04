@@ -321,7 +321,7 @@
      <string>选择文件</string>
     </property>
    </widget>
-   <widget class="QTextEdit" name="textEdit">
+   <widget class="QTextEdit" name="file_selected">
     <property name="geometry">
      <rect>
       <x>960</x>
@@ -331,10 +331,13 @@
      </rect>
     </property>
     <property name="textInteractionFlags">
-     <set>Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+     <set>Qt::NoTextInteraction</set>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButton">
+   <widget class="QPushButton" name="send_file_click">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
     <property name="geometry">
      <rect>
       <x>900</x>
@@ -490,6 +493,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>send_file_click</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>send_file()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>908</x>
+     <y>420</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>846</x>
+     <y>411</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>cal_fuc()</slot>
@@ -500,5 +519,6 @@
   <slot>text_input_trigger()</slot>
   <slot>switch_encodingFormat()</slot>
   <slot>open_file()</slot>
+  <slot>send_file()</slot>
  </slots>
 </ui>
