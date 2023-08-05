@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'd:\github_prj\pyqt_serialTool\ser_prj\untitled.ui'
+# Form implementation generated from reading ui file 'e:\gitHub_prj\pyqt_serialTool\ser_prj\untitled.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.9
 #
@@ -54,7 +54,7 @@ class Ui_MainWindow(object):
         self.ClearRecShow.setGeometry(QtCore.QRect(650, 520, 75, 23))
         self.ClearRecShow.setObjectName("ClearRecShow")
         self.recHexShow = QtWidgets.QCheckBox(self.centralwidget)
-        self.recHexShow.setGeometry(QtCore.QRect(840, 500, 81, 16))
+        self.recHexShow.setGeometry(QtCore.QRect(840, 490, 81, 16))
         self.recHexShow.setCheckable(True)
         self.recHexShow.setChecked(True)
         self.recHexShow.setTristate(False)
@@ -105,7 +105,7 @@ class Ui_MainWindow(object):
         self.send_file_click.setObjectName("send_file_click")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1160, 26))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1160, 23))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)

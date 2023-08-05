@@ -1,4 +1,5 @@
 import sys,os
+import chardet
 from serial import Serial
 from serial.tools import list_ports
 from threading import Thread,Event
@@ -258,14 +259,11 @@ class Mywindow(QMainWindow, Ui_MainWindow):
   def open_file(self):
     fname = QFileDialog.getOpenFileName(self, '打开文件', '/')  # filter='*.txt'
     if fname[0]:
-      with  open(fname[0], 'r') as f:
+      with open(fname[0], 'rb') as f:
         self.file_selected.clear()
         self.file_selected.insertPlainText(fname[0])
         self.file_data_buf = f.read()
-        print("转化前数据类型：",type(self.file_data_buf))
-        self.file_data_buf = self.file_data_buf.encode(self.now_enco_form)
-        print("数据类型：",type(self.file_data_buf))
-        # print("数据：",self.file_data_buf)
+        # print("数据类型：",type(self.file_data_buf),"  ",self.file_data_buf)
   
 
   def send_file(self):
@@ -489,8 +487,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
           Data_Need_Send = Data_Need_Send.replace(" ", "")  # 删除空格           
           try:
             Data_Need_Send = bytes.fromhex(Data_Need_Send)
-            Data_T =  bytesrialtoarray(Data_Need_Send)
-            tx_data.put(Data_T)
+            tx_data.put(Data_Need_Send)
             timeStr = get_strTime()
 
             send_fail = 0
