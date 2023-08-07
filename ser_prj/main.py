@@ -1,5 +1,4 @@
 import sys,os
-import chardet
 from serial import Serial
 from serial.tools import list_ports
 from threading import Thread,Event
@@ -62,6 +61,8 @@ class com_err_code(IntEnum):
   AUTO_SEND_OPEN_ERR = 2
   COM_OPEN_ERR = 3
   SEND_DATA_FORMAT_ERR = 4
+  DATA_LEN_OVERRANGE_ERR = 5
+  FILE_NOT_EXIST_ERR = 6
 
     
  
@@ -73,6 +74,7 @@ class com_state(IntEnum):
 
 #父进程全局变量
 Com_Open_Flag = com_state.CLOSE  # 串口打开标志
+File_Send = 0
 custom_serial = Serial
 usart_process = None
 usart_workState =Queue()
@@ -222,6 +224,8 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     super().__init__()
     
     self.send_thread = Thread(target=self.send_data_process)
+    self.open_file_thread = Thread(target=self.open_file_process)
+    self.send_file_thread = Thread(target=self.send_file_process)
 
     self.now_enco_form = "UTF-8"
     self.file_data_buf = list()
@@ -256,22 +260,40 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     for i in range(0,len(band)):
       self.Com_Band.addItem(band[i])
 
+
   def open_file(self):
-    fname = QFileDialog.getOpenFileName(self, '打开文件', '/')  # filter='*.txt'
-    if fname[0]:
-      with open(fname[0], 'rb') as f:
-        self.file_selected.clear()
-        self.file_selected.insertPlainText(fname[0])
-        self.file_data_buf = f.read()
-        # print("数据类型：",type(self.file_data_buf),"  ",self.file_data_buf)
+    if not self.open_file_thread.is_alive():
+      self.open_file_thread = Thread(target=self.open_file_process)
+      self.fname = QFileDialog.getOpenFileName(self, '打开文件', '/')  # filter='*.txt'
+      if self.fname[0]:
+        try:
+          self.f = open(self.fname[0], 'rb')
+          self.file_selected.clear()
+          self.file_selected.insertPlainText(self.fname[0])
+        except:
+          return
+        
+        self.file_data_buf = list()   #清除buff
+        self.open_file_thread.start()
+        self.open_file_click.setText("文件打开中")
+    
+        
+  def open_file_process(self):
+    print(self.f)
+    self.file_data_buf = self.f.read()
+    print("size:",len(self.file_data_buf))
+    self.f.close()
+    self.open_file_click.setText("选择文件")
+    
   
 
   def send_file(self):
     if len(self.file_data_buf) > 0:
       tx_data.put(self.file_data_buf)
       send_fail = 0
+      
       try:
-        if send_fail == usart_workState.get(timeout = 5):  #等待一帧发送完毕，超时一秒 
+        if send_fail == usart_workState.get(timeout = 3):  #等待一帧发送完毕，超时一秒 
           print("发送失败")
           return      
       except:
@@ -279,6 +301,22 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         return
       self.file_selected.clear()
       self.file_data_buf = list()
+      
+    else:
+      try:
+        self.f = open(self.file_selected.toPlainText(), 'rb')
+        
+        
+      except:
+        self.comErr.update(com_err_code.FILE_NOT_EXIST_ERR)
+      
+  
+      
+  def send_file_process(self):
+    {
+      
+      
+    }
       
 
   #ui刷新槽函数
@@ -312,6 +350,12 @@ class Mywindow(QMainWindow, Ui_MainWindow):
    
       case com_err_code.SEND_DATA_FORMAT_ERR:
         QMessageBox.warning(None, "警告", "待发送数据格式错误！！！", QMessageBox.Ok)
+        
+      case com_err_code.DATA_LEN_OVERRANGE_ERR:
+        QMessageBox.warning(None, "警告", "数据超过1024Byte！！！", QMessageBox.Ok)
+        
+      case com_err_code.FILE_NOT_EXIST_ERR:
+        QMessageBox.warning(None, "警告", "没有导入文件！！！", QMessageBox.Ok)
 
       
   
@@ -479,10 +523,14 @@ class Mywindow(QMainWindow, Ui_MainWindow):
 
 
   def send_data_process(self):
-    if Com_Open_Flag == com_state.OPEN:
+    if Com_Open_Flag == com_state.OPEN and File_Send == 0:
       Data_Need_Send = self.Send_Data_Display.toPlainText()
       dlen = len(Data_Need_Send)
-      if dlen>0:    
+      if dlen>0:
+        if dlen > 1024:
+          self.comErr.update(com_err_code.DATA_LEN_OVERRANGE_ERR)
+          return
+              
         if self.sendHex.isChecked():        
           Data_Need_Send = Data_Need_Send.replace(" ", "")  # 删除空格           
           try:
@@ -492,7 +540,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
 
             send_fail = 0
             try:
-              if send_fail == usart_workState.get(timeout = 1):  #等待一帧发送完毕，超时一秒 
+              if send_fail == usart_workState.get(timeout = 3):  #等待一帧发送完毕，超时一秒 
                 print("发送失败")
                 return      
             except:
@@ -525,7 +573,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
 
           send_fail = 0
           try:
-            if send_fail == usart_workState.get(timeout = 1):  #等待一帧发送完毕 
+            if send_fail == usart_workState.get(timeout = 3):  #等待一帧发送完毕 
               print("发送失败")
               return      
           except:

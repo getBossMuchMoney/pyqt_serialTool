@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'e:\gitHub_prj\pyqt_serialTool\ser_prj\untitled.ui'
+# Form implementation generated from reading ui file 'd:\github_prj\pyqt_serialTool\ser_prj\untitled.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.9
 #
@@ -90,22 +90,22 @@ class Ui_MainWindow(object):
         self.label_6.setGeometry(QtCore.QRect(840, 440, 61, 31))
         self.label_6.setObjectName("label_6")
         self.open_file_click = QtWidgets.QToolButton(self.centralwidget)
-        self.open_file_click.setGeometry(QtCore.QRect(900, 340, 47, 31))
+        self.open_file_click.setGeometry(QtCore.QRect(840, 340, 81, 31))
         self.open_file_click.setObjectName("open_file_click")
-        self.label_7 = QtWidgets.QLabel(self.centralwidget)
-        self.label_7.setGeometry(QtCore.QRect(840, 340, 72, 31))
-        self.label_7.setObjectName("label_7")
         self.file_selected = QtWidgets.QTextEdit(self.centralwidget)
-        self.file_selected.setGeometry(QtCore.QRect(960, 340, 191, 31))
-        self.file_selected.setTextInteractionFlags(QtCore.Qt.NoTextInteraction)
+        self.file_selected.setGeometry(QtCore.QRect(930, 340, 211, 31))
+        self.file_selected.setTextInteractionFlags(QtCore.Qt.TextEditorInteraction)
         self.file_selected.setObjectName("file_selected")
         self.send_file_click = QtWidgets.QPushButton(self.centralwidget)
         self.send_file_click.setEnabled(False)
-        self.send_file_click.setGeometry(QtCore.QRect(900, 380, 93, 28))
+        self.send_file_click.setGeometry(QtCore.QRect(930, 380, 93, 28))
         self.send_file_click.setObjectName("send_file_click")
+        self.stop_send_file_click = QtWidgets.QPushButton(self.centralwidget)
+        self.stop_send_file_click.setGeometry(QtCore.QRect(1040, 380, 93, 28))
+        self.stop_send_file_click.setObjectName("stop_send_file_click")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1160, 23))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1160, 26))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
@@ -142,6 +142,6 @@ class Ui_MainWindow(object):
         self.send_auto.setText(_translate("MainWindow", "定时发送"))
         self.encodingFormat.setText(_translate("MainWindow", "UTF-8"))
         self.label_6.setText(_translate("MainWindow", "编码格式"))
-        self.open_file_click.setText(_translate("MainWindow", "..."))
-        self.label_7.setText(_translate("MainWindow", "选择文件"))
+        self.open_file_click.setText(_translate("MainWindow", "选择文件"))
         self.send_file_click.setText(_translate("MainWindow", "发送文件"))
+        self.stop_send_file_click.setText(_translate("MainWindow", "停止发送"))

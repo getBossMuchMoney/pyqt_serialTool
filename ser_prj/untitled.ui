@@ -298,22 +298,9 @@
    <widget class="QToolButton" name="open_file_click">
     <property name="geometry">
      <rect>
-      <x>900</x>
-      <y>340</y>
-      <width>47</width>
-      <height>31</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>...</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="label_7">
-    <property name="geometry">
-     <rect>
       <x>840</x>
       <y>340</y>
-      <width>72</width>
+      <width>81</width>
       <height>31</height>
      </rect>
     </property>
@@ -324,14 +311,14 @@
    <widget class="QTextEdit" name="file_selected">
     <property name="geometry">
      <rect>
-      <x>960</x>
+      <x>930</x>
       <y>340</y>
-      <width>191</width>
+      <width>211</width>
       <height>31</height>
      </rect>
     </property>
     <property name="textInteractionFlags">
-     <set>Qt::NoTextInteraction</set>
+     <set>Qt::TextEditorInteraction</set>
     </property>
    </widget>
    <widget class="QPushButton" name="send_file_click">
@@ -340,7 +327,7 @@
     </property>
     <property name="geometry">
      <rect>
-      <x>900</x>
+      <x>930</x>
       <y>380</y>
       <width>93</width>
       <height>28</height>
@@ -350,6 +337,19 @@
      <string>发送文件</string>
     </property>
    </widget>
+   <widget class="QPushButton" name="stop_send_file_click">
+    <property name="geometry">
+     <rect>
+      <x>1040</x>
+      <y>380</y>
+      <width>93</width>
+      <height>28</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>停止发送</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -357,7 +357,7 @@
      <x>0</x>
      <y>0</y>
      <width>1160</width>
-     <height>23</height>
+     <height>26</height>
     </rect>
    </property>
   </widget>
