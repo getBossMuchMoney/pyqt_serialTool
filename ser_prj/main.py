@@ -221,6 +221,7 @@ def bytesrialtoarray(msg):
 class Mywindow(QMainWindow, Ui_MainWindow):
   def __init__(self):
     band = ["9600","19200","115200"]
+    self.errCode = 0
     super().__init__()
     
     self.send_thread = Thread(target=self.send_data_process)
@@ -308,7 +309,8 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         
         
       except:
-        self.comErr.update(com_err_code.FILE_NOT_EXIST_ERR)
+        self.errCode = com_err_code.FILE_NOT_EXIST_ERR
+        self.comErr.update(self.errCode)
       
   
       
@@ -338,24 +340,31 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     match index:
       case com_err_code.AUTO_SEND_TIME_SET_ERR:
         QMessageBox.warning(None, "警告", "发送时间间隔不能为零！！！", QMessageBox.Ok)
+        self.errCode = 0
 
       case com_err_code.AUTO_SEND_TIME_NONE_ERR:
         QMessageBox.warning(None, "警告", "请设置发送时间间隔！！！", QMessageBox.Ok)
+        self.errCode = 0
 
       case com_err_code.AUTO_SEND_OPEN_ERR:
         QMessageBox.warning(None, "警告", "只允许连接后开启！！！", QMessageBox.Ok)
+        self.errCode = 0
 
       case com_err_code.COM_OPEN_ERR:
         QMessageBox.warning(None, "警告", "串口被占用或不存在等其他情况！！！", QMessageBox.Ok)
+        self.errCode = 0
    
       case com_err_code.SEND_DATA_FORMAT_ERR:
         QMessageBox.warning(None, "警告", "待发送数据格式错误！！！", QMessageBox.Ok)
+        self.errCode = 0
         
       case com_err_code.DATA_LEN_OVERRANGE_ERR:
         QMessageBox.warning(None, "警告", "数据超过1024Byte！！！", QMessageBox.Ok)
+        self.errCode = 0
         
       case com_err_code.FILE_NOT_EXIST_ERR:
         QMessageBox.warning(None, "警告", "没有导入文件！！！", QMessageBox.Ok)
+        self.errCode = 0
 
       
   
@@ -390,7 +399,8 @@ class Mywindow(QMainWindow, Ui_MainWindow):
             self.close_com()
             self.Open_Com.setEnabled(True)
             # QMessageBox.warning(None, "警告", "选择的串口已不存在！！！", QMessageBox.Ok)
-            self.comErr.update(com_err_code.COM_OPEN_ERR)
+            self.errCode = com_err_code.COM_OPEN_ERR
+            self.comErr.update(self.errCode)
 
   
   def close_com(self):
@@ -426,7 +436,8 @@ class Mywindow(QMainWindow, Ui_MainWindow):
           self.send_auto.setChecked(False)  #取消勾选自动发送
           self.send_freq.setEnabled(True) #解锁自动发送时间输入
           # QMessageBox.warning(None, "警告", "发送时间间隔不能为零！！！", QMessageBox.Ok)
-          self.comErr.update(com_err_code.AUTO_SEND_TIME_SET_ERR)
+          self.errCode = com_err_code.AUTO_SEND_TIME_SET_ERR
+          self.comErr.update(self.errCode)
           return
         
         auto_send_timer.change(self.send_data_click,autoSendTime)
@@ -435,12 +446,14 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         self.send_auto.setChecked(False)  #取消勾选自动发送
         print("定时发送关闭")
         # QMessageBox.warning(None, "警告", "请设置发送时间间隔！！！", QMessageBox.Ok)
-        self.comErr.update(com_err_code.AUTO_SEND_TIME_NONE_ERR)
+        self.errCode = com_err_code.AUTO_SEND_TIME_NONE_ERR
+        self.comErr.update(self.errCode)
       
     else:
       if Com_Open_Flag == com_state.CLOSE:
         # QMessageBox.warning(None, "警告", "只允许连接后开启！！！", QMessageBox.Ok)
-        self.comErr.update(com_err_code.AUTO_SEND_OPEN_ERR)
+        self.errCode = com_err_code.AUTO_SEND_OPEN_ERR
+        self.comErr.update(self.errCode)
       try:
         auto_send_timer.pause()
       except:
@@ -487,7 +500,8 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         deal_rec_thread.start()
       else:
         # QMessageBox.warning(None, "警告", "串口被占用或不存在！！！", QMessageBox.Ok)
-        self.comErr.update(com_err_code.COM_OPEN_ERR)
+        self.errCode = com_err_code.COM_OPEN_ERR
+        self.comErr.update(self.errCode)
         
     else:
       print("点击了关闭串口按钮")
@@ -528,7 +542,15 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       dlen = len(Data_Need_Send)
       if dlen>0:
         if dlen > 1024:
-          self.comErr.update(com_err_code.DATA_LEN_OVERRANGE_ERR)
+          if self.send_auto.isChecked():
+            auto_send_timer.pause()
+            self.send_auto.setChecked(False)  #取消勾选自动发送
+            self.send_freq.setEnabled(True)   #允许发送时间间隔设置
+          
+          if self.errCode == 0:
+            self.errCode = com_err_code.DATA_LEN_OVERRANGE_ERR
+            self.comErr.update(self.errCode)
+            
           return
               
         if self.sendHex.isChecked():        
@@ -565,7 +587,8 @@ class Mywindow(QMainWindow, Ui_MainWindow):
               self.send_freq.setEnabled(True)   #允许发送时间间隔设置
                
             # QMessageBox.warning(None, "警告", "待发送数据格式错误！！！", QMessageBox.Ok)
-            self.comErr.update(com_err_code.SEND_DATA_FORMAT_ERR)
+            self.errCode = com_err_code.SEND_DATA_FORMAT_ERR
+            self.comErr.update(self.errCode)
                        
         else:
           tx_data.put(Data_Need_Send.encode(self.now_enco_form))  #发送
