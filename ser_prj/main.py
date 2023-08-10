@@ -290,24 +290,19 @@ class Mywindow(QMainWindow, Ui_MainWindow):
 
   def send_file(self):
     if len(self.file_data_buf) > 0:
-      tx_data.put(self.file_data_buf)
-      send_fail = 0
-      
-      try:
-        if send_fail == usart_workState.get(timeout = 3):  #等待一帧发送完毕，超时一秒 
-          print("发送失败")
-          return      
-      except:
-        print("发送超时")
-        return
-      self.file_selected.clear()
-      self.file_data_buf = list()
+
+      if self.file_selected.toPlainText() == self.fname[0]:
+        self.send_file_thread = Thread(target=self.send_file_process)
+        self.send_file_thread.start()
       
     else:
       try:
         self.f = open(self.file_selected.toPlainText(), 'rb')
-        
-        
+        self.open_file_click.setText("文件打开中")
+        self.open_file_process()
+        self.send_file_thread = Thread(target=self.send_file_process)
+        self.send_file_thread.start()
+          
       except:
         self.errCode = com_err_code.FILE_NOT_EXIST_ERR
         self.comErr.update(self.errCode)
@@ -315,10 +310,51 @@ class Mywindow(QMainWindow, Ui_MainWindow):
   
       
   def send_file_process(self):
-    {
+    data_group = len(self.file_data_buf)//1024
+    left_data_size = len(self.file_data_buf)%1024
+    print(data_group,left_data_size)
+
+    if data_group > 0:
+      for i in range(0,data_group):
+        databuf = self.file_data_buf[i*1024:(i+1)*1024]
+        tx_data.put(databuf)
+        send_fail = 0
+        try:
+          if send_fail == usart_workState.get(timeout = 3):  #等待一帧发送完毕，超时3秒 
+            print("发送失败")
+            return      
+        except:
+          print("发送超时")
+          return
+        
+        if i == data_group - 1 and left_data_size>0:
+          databuf = self.file_data_buf[data_group*1024:len(self.file_data_buf)]
+          tx_data.put(databuf)
+          send_fail = 0
+          try:
+            if send_fail == usart_workState.get(timeout = 3):  #等待一帧发送完毕，超时3秒 
+              print("发送失败")
+              return      
+          except:
+            print("发送超时")
+            return
+
+    else:
+      tx_data.put(self.file_data_buf)
+      send_fail = 0
+      try:
+        if send_fail == usart_workState.get(timeout = 3):  #等待一帧发送完毕，超时3秒 
+          print("发送失败")
+          return      
+      except:
+        print("发送超时")
+        return
+
       
-      
-    }
+
+
+
+
       
 
   #ui刷新槽函数
@@ -359,11 +395,11 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         self.errCode = 0
         
       case com_err_code.DATA_LEN_OVERRANGE_ERR:
-        QMessageBox.warning(None, "警告", "数据超过1024Byte！！！", QMessageBox.Ok)
+        QMessageBox.warning(None, "警告", "数据超过1024Bytes！！！", QMessageBox.Ok)
         self.errCode = 0
         
       case com_err_code.FILE_NOT_EXIST_ERR:
-        QMessageBox.warning(None, "警告", "没有导入文件！！！", QMessageBox.Ok)
+        QMessageBox.warning(None, "警告", "文件不存在或路径错误！！！", QMessageBox.Ok)
         self.errCode = 0
 
       
