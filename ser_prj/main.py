@@ -220,7 +220,7 @@ def bytesrialtoarray(msg):
 
 class Mywindow(QMainWindow, Ui_MainWindow):
   def __init__(self):
-    band = ["9600","19200","115200"]
+    band = ["9600","19200","115200","460800","2000000"]
     self.errCode = 0
     super().__init__()
     
