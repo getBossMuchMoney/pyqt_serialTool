@@ -1,5 +1,6 @@
 import sys,os
 from serial import Serial
+from cushy_serial import CushySerial
 from serial.tools import list_ports
 from threading import Thread,Event
 from PyQt5.QtWidgets import QApplication,QMainWindow,QMessageBox,QFileDialog
@@ -76,7 +77,7 @@ class com_state(IntEnum):
 #父进程全局变量
 Com_Open_Flag = com_state.CLOSE  # 串口打开标志
 File_Send = 0
-custom_serial = Serial
+custom_serial = CushySerial
 usart_process = None
 usart_workState =Queue()
 serial_cfg = Queue()
@@ -101,10 +102,9 @@ def clear(q):
     q.get_nowait()
  
 
-
 #串口接收数据处理线程
 def rec_deal(recClose_event,rx_data):
-  global sSerial
+  global sSerial,tt
   while not recClose_event.is_set(): 
 
     data = sSerial.read_all()
@@ -112,7 +112,6 @@ def rec_deal(recClose_event,rx_data):
       rx_data.put(data)
     else:
       time.sleep(0.001)
-      
 
 
 def send_deal(sendClose_event,usart_workState,tx_data):
@@ -139,7 +138,7 @@ def usart_setting(serial_cfg,usart_workState,rx_data,tx_data):
   global sSerial,recClose_event
   try:
     seriConf = serial_cfg.get(block=True)
-    sSerial = Serial(seriConf[0],seriConf[1])
+    sSerial = CushySerial(seriConf[0],seriConf[1],timeout=0.5)
   except:
     usart_workState.put(com_state.CLOSE)
     print("串口配置失败")
@@ -297,11 +296,24 @@ class Mywindow(QMainWindow, Ui_MainWindow):
   
 
   def send_file(self):
-    if len(self.file_data_buf) > 0:
-      print(self.file_selected.text())
-      if self.file_selected.text() == self.fname[0]:
-        self.send_file_thread = Thread(target=self.send_file_process)
-        self.send_file_thread.start()
+    if not self.send_file_thread.is_alive():
+      if len(self.file_data_buf) > 0:
+        print(self.file_selected.text())
+        if self.file_selected.text() == self.fname[0]:
+          self.send_file_thread = Thread(target=self.send_file_process)
+          self.send_file_thread.start()
+        
+        else:
+          try:
+            self.f = open(self.file_selected.text(), 'rb')
+            self.open_file_click.setText("文件打开中")
+            self.open_file_process()
+            self.send_file_thread = Thread(target=self.send_file_process)
+            self.send_file_thread.start()
+          
+          except:
+            self.errCode = com_err_code.FILE_NOT_EXIST_ERR
+            self.comErr.update(self.errCode)
         
       else:
         try:
@@ -314,18 +326,6 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         except:
           self.errCode = com_err_code.FILE_NOT_EXIST_ERR
           self.comErr.update(self.errCode)
-        
-    else:
-      try:
-        self.f = open(self.file_selected.text(), 'rb')
-        self.open_file_click.setText("文件打开中")
-        self.open_file_process()
-        self.send_file_thread = Thread(target=self.send_file_process)
-        self.send_file_thread.start()
-          
-      except:
-        self.errCode = com_err_code.FILE_NOT_EXIST_ERR
-        self.comErr.update(self.errCode)
       
   
       
@@ -347,6 +347,8 @@ class Mywindow(QMainWindow, Ui_MainWindow):
           print("发送超时")
           return
         
+        print("group",i+1,"\n")
+        
         if i == data_group - 1 and left_data_size>0:
           databuf = self.file_data_buf[data_group*1024:len(self.file_data_buf)]
           tx_data.put(databuf)
@@ -358,6 +360,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
           except:
             print("发送超时")
             return
+          print("group",i+2,"\n")
 
     else:
       tx_data.put(self.file_data_buf)
