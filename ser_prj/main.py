@@ -63,6 +63,7 @@ class com_err_code(IntEnum):
   SEND_DATA_FORMAT_ERR = 4
   DATA_LEN_OVERRANGE_ERR = 5
   FILE_NOT_EXIST_ERR = 6
+  FILE_SIZE_OVERRANGE = 7
 
     
  
@@ -270,7 +271,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         try:
           self.f = open(self.fname[0], 'rb')
           self.file_selected.clear()
-          self.file_selected.insertPlainText(self.fname[0])
+          self.file_selected.setText(self.fname[0])
         except:
           return
         
@@ -281,7 +282,14 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         
   def open_file_process(self):
     print(self.f)
-    self.file_data_buf = self.f.read()
+    try:
+      self.file_data_buf = self.f.read()
+    except:
+      self.file_data_buf = list()
+      self.file_selected.clear()
+      self.errCode = com_err_code.FILE_SIZE_OVERRANGE
+      self.comErr.update(self.errCode)
+      
     print("size:",len(self.file_data_buf))
     self.f.close()
     self.open_file_click.setText("选择文件")
@@ -290,14 +298,26 @@ class Mywindow(QMainWindow, Ui_MainWindow):
 
   def send_file(self):
     if len(self.file_data_buf) > 0:
-
-      if self.file_selected.toPlainText() == self.fname[0]:
+      print(self.file_selected.text())
+      if self.file_selected.text() == self.fname[0]:
         self.send_file_thread = Thread(target=self.send_file_process)
         self.send_file_thread.start()
-      
+        
+      else:
+        try:
+          self.f = open(self.file_selected.text(), 'rb')
+          self.open_file_click.setText("文件打开中")
+          self.open_file_process()
+          self.send_file_thread = Thread(target=self.send_file_process)
+          self.send_file_thread.start()
+          
+        except:
+          self.errCode = com_err_code.FILE_NOT_EXIST_ERR
+          self.comErr.update(self.errCode)
+        
     else:
       try:
-        self.f = open(self.file_selected.toPlainText(), 'rb')
+        self.f = open(self.file_selected.text(), 'rb')
         self.open_file_click.setText("文件打开中")
         self.open_file_process()
         self.send_file_thread = Thread(target=self.send_file_process)
@@ -351,12 +371,6 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         return
 
       
-
-
-
-
-      
-
   #ui刷新槽函数
   def ui_show_refresh(self,data):
     self.Data_Display.insertPlainText(data)
@@ -400,6 +414,10 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         
       case com_err_code.FILE_NOT_EXIST_ERR:
         QMessageBox.warning(None, "警告", "文件不存在或路径错误！！！", QMessageBox.Ok)
+        self.errCode = 0
+        
+      case com_err_code.FILE_SIZE_OVERRANGE:
+        QMessageBox.warning(None, "警告", "文件大小超出限制！！！", QMessageBox.Ok)
         self.errCode = 0
 
       
