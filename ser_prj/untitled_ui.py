@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'd:\github_prj\pyqt_serialTool\ser_prj\untitled.ui'
+# Form implementation generated from reading ui file 'e:\gitHub_prj\pyqt_serialTool\ser_prj\untitled.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.9
 #
@@ -54,7 +54,7 @@ class Ui_MainWindow(object):
         self.ClearRecShow.setGeometry(QtCore.QRect(650, 520, 75, 23))
         self.ClearRecShow.setObjectName("ClearRecShow")
         self.recHexShow = QtWidgets.QCheckBox(self.centralwidget)
-        self.recHexShow.setGeometry(QtCore.QRect(840, 500, 81, 16))
+        self.recHexShow.setGeometry(QtCore.QRect(840, 490, 81, 16))
         self.recHexShow.setCheckable(True)
         self.recHexShow.setChecked(True)
         self.recHexShow.setTristate(False)
@@ -84,14 +84,38 @@ class Ui_MainWindow(object):
         self.send_auto.setCheckable(False)
         self.send_auto.setObjectName("send_auto")
         self.encodingFormat = QtWidgets.QPushButton(self.centralwidget)
-        self.encodingFormat.setGeometry(QtCore.QRect(900, 430, 71, 28))
+        self.encodingFormat.setGeometry(QtCore.QRect(900, 437, 71, 31))
         self.encodingFormat.setObjectName("encodingFormat")
         self.label_6 = QtWidgets.QLabel(self.centralwidget)
-        self.label_6.setGeometry(QtCore.QRect(840, 430, 61, 31))
+        self.label_6.setGeometry(QtCore.QRect(840, 440, 61, 31))
         self.label_6.setObjectName("label_6")
+        self.open_file_click = QtWidgets.QToolButton(self.centralwidget)
+        self.open_file_click.setGeometry(QtCore.QRect(840, 340, 81, 31))
+        self.open_file_click.setObjectName("open_file_click")
+        self.send_file_click = QtWidgets.QPushButton(self.centralwidget)
+        self.send_file_click.setEnabled(False)
+        self.send_file_click.setGeometry(QtCore.QRect(930, 380, 93, 28))
+        self.send_file_click.setObjectName("send_file_click")
+        self.file_selected = QtWidgets.QLineEdit(self.centralwidget)
+        self.file_selected.setGeometry(QtCore.QRect(930, 340, 221, 31))
+        self.file_selected.setObjectName("file_selected")
+        self.sendLength = QtWidgets.QLineEdit(self.centralwidget)
+        self.sendLength.setGeometry(QtCore.QRect(490, 630, 101, 20))
+        self.sendLength.setReadOnly(True)
+        self.sendLength.setObjectName("sendLength")
+        self.receiveLength = QtWidgets.QLineEdit(self.centralwidget)
+        self.receiveLength.setGeometry(QtCore.QRect(670, 630, 101, 20))
+        self.receiveLength.setReadOnly(True)
+        self.receiveLength.setObjectName("receiveLength")
+        self.label_7 = QtWidgets.QLabel(self.centralwidget)
+        self.label_7.setGeometry(QtCore.QRect(430, 630, 51, 21))
+        self.label_7.setObjectName("label_7")
+        self.label_8 = QtWidgets.QLabel(self.centralwidget)
+        self.label_8.setGeometry(QtCore.QRect(610, 630, 51, 21))
+        self.label_8.setObjectName("label_8")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1160, 26))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1160, 23))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
@@ -101,11 +125,11 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
         self.Send_Data.clicked.connect(MainWindow.send_data_click) # type: ignore
         self.Open_Com.clicked.connect(MainWindow.open_com_click) # type: ignore
-        self.ClearRecShow.clicked.connect(self.Data_Display.clear) # type: ignore
         self.Data_Display.textChanged.connect(MainWindow.drag_scroll) # type: ignore
-        self.ClearSendShow.clicked.connect(self.Send_Data_Display.clear) # type: ignore
         self.send_auto.clicked.connect(MainWindow.send_auto_click) # type: ignore
         self.encodingFormat.clicked.connect(MainWindow.switch_encodingFormat) # type: ignore
+        self.open_file_click.clicked.connect(MainWindow.open_file) # type: ignore
+        self.send_file_click.clicked.connect(MainWindow.send_file) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -126,3 +150,7 @@ class Ui_MainWindow(object):
         self.send_auto.setText(_translate("MainWindow", "定时发送"))
         self.encodingFormat.setText(_translate("MainWindow", "UTF-8"))
         self.label_6.setText(_translate("MainWindow", "编码格式"))
+        self.open_file_click.setText(_translate("MainWindow", "选择文件"))
+        self.send_file_click.setText(_translate("MainWindow", "发送文件"))
+        self.label_7.setText(_translate("MainWindow", "发送数据:"))
+        self.label_8.setText(_translate("MainWindow", "接收数据:"))
