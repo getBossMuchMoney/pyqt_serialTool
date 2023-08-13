@@ -3,7 +3,7 @@ from serial import Serial
 from cushy_serial import CushySerial
 from serial.tools import list_ports
 from threading import Thread,Event
-from PyQt5.QtWidgets import QApplication,QMainWindow,QMessageBox,QFileDialog
+from PyQt5.QtWidgets import QApplication,QMainWindow,QMessageBox,QFileDialog,QProgressDialog
 from untitled_ui import Ui_MainWindow
 from PyQt5.QtCore import Qt,pyqtSignal,QObject,QThread
 import multiprocessing
@@ -25,7 +25,7 @@ class ui_show(QObject):
     self.update_signal.emit(data)
 
 
-class err_code_check(QObject):
+class number_check(QObject):
   update_signal = pyqtSignal(int)
  
   def __init__(self):
@@ -65,6 +65,8 @@ class com_err_code(IntEnum):
   DATA_LEN_OVERRANGE_ERR = 5
   FILE_NOT_EXIST_ERR = 6
   FILE_SIZE_OVERRANGE = 7
+  FILE_READ_ERR = 8
+  FILE_SEND_ERR = 9
 
     
  
@@ -76,7 +78,6 @@ class com_state(IntEnum):
 
 #父进程全局变量
 Com_Open_Flag = com_state.CLOSE  # 串口打开标志
-File_Send = 0
 custom_serial = CushySerial
 usart_process = None
 usart_workState =Queue()
@@ -222,8 +223,13 @@ class Mywindow(QMainWindow, Ui_MainWindow):
   def __init__(self):
     band = ["9600","19200","115200","460800","2000000"]
     self.errCode = 0
+    self.send_len = 0
+    self.recv_len = 0
+    self.sendProcessCount = 0
+
+  
     super().__init__()
-    
+
     self.send_thread = Thread(target=self.send_data_process)
     self.open_file_thread = Thread(target=self.open_file_process)
     self.send_file_thread = Thread(target=self.send_file_process)
@@ -234,10 +240,27 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     self.ui_update = ui_show()
     self.ui_update.update_signal.connect(self.ui_show_refresh)
 
-    self.comErr = err_code_check()
+    self.comErr = number_check()
     self.comErr.update_signal.connect(self.err_code_warning)
 
+    self.send_count_update = state_check()
+    self.send_count_update.update_signal.connect(self.send_cnt_reflash)
+    self.recv_count_update = state_check()
+    self.recv_count_update.update_signal.connect(self.recv_cnt_reflash)
+
+    self.send_process_show_start = number_check()
+    self.send_process_show_start.update_signal.connect(self.send_process_window)
+
+    self.send_process_count_update = number_check()
+    self.send_process_count_update.update_signal.connect(self.send_process_count_reflash)
+    
     self.setupUi(self)
+
+    self.ClearRecShow.clicked.connect(self.recv_show_clear)
+    self.ClearSendShow.clicked.connect(self.send_show_clear)
+
+    self.sendLength.setText(str(0))
+    self.receiveLength.setText(str(0))
 
     
     # 创建一个整数验证器
@@ -262,11 +285,32 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       self.Com_Band.addItem(band[i])
 
 
+  def send_process_count_reflash(self,cnt):
+    self.sendProgress.setValue(cnt)
+
+
+
+  def send_process_window(self,ctr):
+    if ctr:
+      self.sendProgress = QProgressDialog('发送进度','取消',0,self.sendProcessCount,self)
+      self.sendProgress.setWindowTitle("正在发送")
+      self.sendProgress.show()
+    else:
+      self.sendProgress.close()
+
+
   def open_file(self):
-    if not self.open_file_thread.is_alive():
+    if not self.open_file_thread.is_alive() and not self.send_file_thread.is_alive():
       self.open_file_thread = Thread(target=self.open_file_process)
       self.fname = QFileDialog.getOpenFileName(self, '打开文件', '/')  # filter='*.txt'
+
       if self.fname[0]:
+        file_size = os.path.getsize(self.fname[0])
+        if file_size > 1024*1024*1024:
+          self.errCode = com_err_code.FILE_SIZE_OVERRANGE
+          self.comErr.update(self.errCode)
+          return
+
         try:
           self.f = open(self.fname[0], 'rb')
           self.file_selected.clear()
@@ -286,7 +330,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     except:
       self.file_data_buf = list()
       self.file_selected.clear()
-      self.errCode = com_err_code.FILE_SIZE_OVERRANGE
+      self.errCode = com_err_code.FILE_READ_ERR
       self.comErr.update(self.errCode)
       
     print("size:",len(self.file_data_buf))
@@ -296,13 +340,13 @@ class Mywindow(QMainWindow, Ui_MainWindow):
   
 
   def send_file(self):
-    if not self.send_file_thread.is_alive():
+    if not self.send_file_thread.is_alive() and not self.open_file_thread.is_alive():
       if len(self.file_data_buf) > 0:
         print(self.file_selected.text())
         if self.file_selected.text() == self.fname[0]:
           self.send_file_thread = Thread(target=self.send_file_process)
           self.send_file_thread.start()
-        
+              
         else:
           try:
             self.f = open(self.file_selected.text(), 'rb')
@@ -310,7 +354,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
             self.open_file_process()
             self.send_file_thread = Thread(target=self.send_file_process)
             self.send_file_thread.start()
-          
+       
           except:
             self.errCode = com_err_code.FILE_NOT_EXIST_ERR
             self.comErr.update(self.errCode)
@@ -322,7 +366,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
           self.open_file_process()
           self.send_file_thread = Thread(target=self.send_file_process)
           self.send_file_thread.start()
-          
+      
         except:
           self.errCode = com_err_code.FILE_NOT_EXIST_ERR
           self.comErr.update(self.errCode)
@@ -333,21 +377,46 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     data_group = len(self.file_data_buf)//1024
     left_data_size = len(self.file_data_buf)%1024
     print(data_group,left_data_size)
+    if data_group>0 and left_data_size>0:
+      self.sendProcessCount = data_group + 1
+    elif data_group == 0:
+      self.sendProcessCount = 1
+    else:
+      self.sendProcessCount = data_group
+
+    self.send_process_show_start.update(1)
+    time.sleep(0.1)
 
     if data_group > 0:
       for i in range(0,data_group):
+        
+        if self.sendProgress.wasCanceled():
+          self.send_process_show_start.update(0)
+          self.errCode = com_err_code.FILE_SEND_ERR
+          self.comErr.update(self.errCode)
+          return
+
         databuf = self.file_data_buf[i*1024:(i+1)*1024]
         tx_data.put(databuf)
         send_fail = 0
         try:
           if send_fail == usart_workState.get(timeout = 3):  #等待一帧发送完毕，超时3秒 
             print("发送失败")
+            self.send_process_show_start.update(0)
+            self.errCode = com_err_code.FILE_SEND_ERR
+            self.comErr.update(self.errCode)
             return      
         except:
           print("发送超时")
+          self.send_process_show_start.update(0)
+          self.errCode = com_err_code.FILE_SEND_ERR
+          self.comErr.update(self.errCode)
           return
         
-        print("group",i+1,"\n")
+        self.send_process_count_update.update(i+1)
+        
+        self.send_len+=1024
+        self.send_count_update.update()
         
         if i == data_group - 1 and left_data_size>0:
           databuf = self.file_data_buf[data_group*1024:len(self.file_data_buf)]
@@ -356,11 +425,21 @@ class Mywindow(QMainWindow, Ui_MainWindow):
           try:
             if send_fail == usart_workState.get(timeout = 3):  #等待一帧发送完毕，超时3秒 
               print("发送失败")
+              self.send_process_show_start.update(0)
+              self.errCode = com_err_code.FILE_SEND_ERR
+              self.comErr.update(self.errCode)
               return      
           except:
             print("发送超时")
+            self.send_process_show_start.update(0)
+            self.errCode = com_err_code.FILE_SEND_ERR
+            self.comErr.update(self.errCode)
             return
-          print("group",i+2,"\n")
+          self.send_len+=left_data_size
+          self.send_count_update.update()
+
+          self.send_process_count_update.update(i+2)
+
 
     else:
       tx_data.put(self.file_data_buf)
@@ -368,16 +447,47 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       try:
         if send_fail == usart_workState.get(timeout = 3):  #等待一帧发送完毕，超时3秒 
           print("发送失败")
+          self.send_process_show_start.update(0)
+          self.errCode = com_err_code.FILE_SEND_ERR
+          self.comErr.update(self.errCode)
           return      
       except:
         print("发送超时")
+        self.send_process_show_start.update(0)
+        self.errCode = com_err_code.FILE_SEND_ERR
+        self.comErr.update(self.errCode)
         return
+      
+      self.send_len+=left_data_size
+      self.send_count_update.update()
+
+      self.send_process_count_update.update(1)
+
 
       
   #ui刷新槽函数
   def ui_show_refresh(self,data):
     self.Data_Display.insertPlainText(data)
-    
+
+  #发送数量刷新槽函数
+  def send_cnt_reflash(self):
+    self.sendLength.setText(str(self.send_len))
+
+  #接收数量刷新槽函数
+  def recv_cnt_reflash(self):
+    self.receiveLength.setText(str(self.recv_len)) 
+
+
+  def send_show_clear(self):
+    self.send_len = 0
+    self.send_count_update.update()
+    self.Send_Data_Display.clear()
+
+  def recv_show_clear(self):
+    self.recv_len = 0
+    self.recv_count_update.update()
+    self.Data_Display.clear()
+
 
 
   def switch_encodingFormat(self):
@@ -421,6 +531,14 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         
       case com_err_code.FILE_SIZE_OVERRANGE:
         QMessageBox.warning(None, "警告", "文件大小超出限制！！！", QMessageBox.Ok)
+        self.errCode = 0
+
+      case com_err_code.FILE_READ_ERR:
+        QMessageBox.warning(None, "警告", "文件读取出现错误！！！", QMessageBox.Ok)
+        self.errCode = 0
+
+      case com_err_code.FILE_SEND_ERR:
+        QMessageBox.warning(None, "警告", "文件发送出现中断,发送失败！！！", QMessageBox.Ok)
         self.errCode = 0
 
       
@@ -574,6 +692,8 @@ class Mywindow(QMainWindow, Ui_MainWindow):
   
       if rx_data.empty() == False:
         data = rx_data.get()
+        self.recv_len+= len(data)
+        self.recv_count_update.update()
         self.Set_Display_Data(data)
         
       else:
@@ -594,7 +714,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
 
 
   def send_data_process(self):
-    if Com_Open_Flag == com_state.OPEN and File_Send == 0:
+    if Com_Open_Flag == com_state.OPEN and not self.send_file_thread.is_alive() == True:
       Data_Need_Send = self.Send_Data_Display.toPlainText()
       dlen = len(Data_Need_Send)
       if dlen>0:
@@ -625,6 +745,9 @@ class Mywindow(QMainWindow, Ui_MainWindow):
             except:
               print("发送超时")
               return
+            
+            self.send_len+=len(Data_Need_Send)
+            self.send_count_update.update()
                  
             if self.recHexShow.isChecked():
               show_str = (' '.join([hex(x)[2:].zfill(2) for x in Data_Need_Send])).upper()
@@ -659,6 +782,10 @@ class Mywindow(QMainWindow, Ui_MainWindow):
           except:
             print("发送超时")
             return
+          
+          self.send_len+=len(Data_Need_Send.encode(self.now_enco_form))
+          self.send_count_update.update()
+
         
           if self.recHexShow.isChecked():
             show_str = Data_Need_Send.encode(self.now_enco_form).hex()
