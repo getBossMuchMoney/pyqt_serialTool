@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="textInteractionFlags">
-     <set>Qt::NoTextInteraction</set>
+     <set>Qt::TextBrowserInteraction</set>
     </property>
     <property name="placeholderText">
      <string/>
@@ -393,7 +393,7 @@
      <x>0</x>
      <y>0</y>
      <width>1160</width>
-     <height>23</height>
+     <height>26</height>
     </rect>
    </property>
   </widget>
