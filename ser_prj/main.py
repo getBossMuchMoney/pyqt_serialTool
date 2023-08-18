@@ -12,7 +12,7 @@ from enum import IntEnum
 import time
 from datetime import datetime
 from PyQt5.QtGui import QTextCursor,QIntValidator
-from myTimer import msTimer
+from myTimer import msTimer,msTimer_Call
 
 #自定义信号量       
 class ui_show(QObject):
@@ -85,17 +85,30 @@ serial_cfg = Queue()
 usart_data = Queue()
 rx_data = Queue()
 tx_data = Queue()
+heartbeat = Queue()
 comState = Value('i',com_state.CLOSE) 
 comListTimer = msTimer(None,0)
 auto_send_timer = msTimer(None,0)
 working_com = None
+_1000msTimer = msTimer_Call(1000)
+@_1000msTimer.msTimer_callback()
+def pprocess_heartbeat():
+  heartbeat.put(1)
+  print("心跳开启")
 
 
 #子进程全局变量
 sSerial = 0
 recClose_event = Event()
 sendClose_event = Event()
+pprocess_killed = False
 
+_2000msTimer = msTimer_Call(2000)
+@_2000msTimer.msTimer_callback()
+def subprocess_quit():
+  global pprocess_killed
+  pprocess_killed = True
+  
 
 
 def clear(q):
@@ -135,7 +148,7 @@ def send_deal(sendClose_event,usart_workState,tx_data):
 
 
 # 进行串口配置
-def usart_setting(serial_cfg,usart_workState,rx_data,tx_data):
+def usart_setting(serial_cfg,usart_workState,rx_data,tx_data,heartbeat):
   global sSerial,recClose_event
   try:
     seriConf = serial_cfg.get(block=True)
@@ -151,10 +164,10 @@ def usart_setting(serial_cfg,usart_workState,rx_data,tx_data):
     send_thread = Thread(target=send_deal,args=(sendClose_event,usart_workState,tx_data))
     rec_thread.start()
     send_thread.start()
+    _2000msTimer.start()
     usart_workState.put(com_state.OPEN)
     while True:
-      if serial_cfg.get() == com_state.CLOSE:
-        print("串口关闭")
+      if pprocess_killed == True:
         recClose_event.set()
         sendClose_event.set()
         rec_thread.join()
@@ -162,9 +175,30 @@ def usart_setting(serial_cfg,usart_workState,rx_data,tx_data):
         clear(rx_data)
         clear(tx_data)
         sSerial.close()
-        break  
+        _2000msTimer.pause()
+        break 
+        
+      if serial_cfg.empty() == False: 
+        if serial_cfg.get() == com_state.CLOSE:
+          print("串口关闭")
+          recClose_event.set()
+          sendClose_event.set()
+          rec_thread.join()
+          send_thread.join()
+          clear(rx_data)
+          clear(tx_data)
+          sSerial.close()
+          _2000msTimer.pause()
+          break 
+        
+      if heartbeat.empty() == False:
+        heartbeat.get()
+        _2000msTimer.pause()
+        _2000msTimer.start()
+      else:
+        time.sleep(0.001)
+      
          
-
         
  # 获取串口列表
 def Get_Com_List():
@@ -235,6 +269,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
 
     self.now_enco_form = "UTF-8"
     self.file_data_buf = list()
+    self.file_size = 0
     
     self.ui_update = ui_show()
     self.ui_update.update_signal.connect(self.ui_show_refresh)
@@ -282,8 +317,10 @@ class Mywindow(QMainWindow, Ui_MainWindow):
 
     for i in range(0,len(band)):
       self.Com_Band.addItem(band[i])
-
-
+      
+    
+      
+    
   def send_process_count_reflash(self,cnt):
     self.sendProgress.setValue(cnt)
 
@@ -316,27 +353,10 @@ class Mywindow(QMainWindow, Ui_MainWindow):
           self.file_selected.setText(self.fname[0])
         except:
           return
+      else:
+        self.file_size = 0
         
-        # self.file_data_buf = list()   #清除buff
-        # self.open_file_thread.start()
-        # self.open_file_click.setText("文件打开中")
     
-        
-  # def open_file_process(self):
-  #   print(self.f)
-  #   try:
-  #     self.file_data_buf = self.f.read()
-  #   except:
-  #     self.file_data_buf = list()
-  #     self.file_selected.clear()
-  #     self.errCode = com_err_code.FILE_READ_ERR
-  #     self.comErr.update(self.errCode)
-      
-  #   print("size:",len(self.file_data_buf))
-  #   self.f.close()
-  #   self.open_file_click.setText("选择文件")
-    
-  
 
   def send_file(self):
     if not self.send_file_thread.is_alive():
@@ -350,8 +370,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         else:
           try:
             self.f = open(self.file_selected.text(), 'rb')
-            self.open_file_click.setText("文件打开中")
-            self.open_file_process()
+            self.file_size = os.path.getsize(self.file_selected.text())
             self.send_file_thread = Thread(target=self.send_file_process)
             self.send_file_thread.start()
        
@@ -362,6 +381,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       else:
         try:
           self.f = open(self.file_selected.text(), 'rb')
+          self.file_size = os.path.getsize(self.file_selected.text())
           self.send_file_thread = Thread(target=self.send_file_process)
           self.send_file_thread.start()
       
@@ -514,12 +534,12 @@ class Mywindow(QMainWindow, Ui_MainWindow):
 
 
   def send_show_clear(self):
-    self.send_len = 0
-    self.send_count_update.update()
     self.Send_Data_Display.clear()
 
   def recv_show_clear(self):
     self.recv_len = 0
+    self.send_len = 0
+    self.send_count_update.update()
     self.recv_count_update.update()
     self.Data_Display.clear()
 
@@ -617,6 +637,8 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     global Com_Open_Flag,working_com
     Com_Open_Flag = com_state.CLOSE
     working_com = None
+    _1000msTimer.pause()
+    clear(heartbeat)
     if self.send_auto.isChecked():
       auto_send_timer.pause()
       self.send_auto.setChecked(False)  #取消勾选自动发送
@@ -693,7 +715,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       cfg_list = [comPort,comBand]
       # serial_cfg = Manager().list(range(2))
       serial_cfg.put(cfg_list)
-      usart_process = Process(target=usart_setting,args=(serial_cfg,usart_workState,rx_data,tx_data))
+      usart_process = Process(target=usart_setting,args=(serial_cfg,usart_workState,rx_data,tx_data,heartbeat))
       usart_process.daemon = True
       usart_process.start()
       Com_Open_Flag = usart_workState.get(block=True,timeout=3)
@@ -706,8 +728,11 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         self.Com_Band.setEnabled(False)  # 串口号和波特率变为不可选择
         self.Com_Port.setEnabled(False)
         deal_rec_thread =  Thread(target = self.recieve_data)
+        check_subprocess_thread = Thread(target = self.check_subprocess)
         deal_rec_thread.daemon = True
         deal_rec_thread.start()
+        _1000msTimer.start()
+        check_subprocess_thread.start()
       else:
         # QMessageBox.warning(None, "警告", "串口被占用或不存在！！！", QMessageBox.Ok)
         self.errCode = com_err_code.COM_OPEN_ERR
@@ -718,6 +743,35 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       self.close_com()
        
     self.Open_Com.setEnabled(True)
+  
+  
+  def check_subprocess(self):
+    global Com_Open_Flag,working_com
+    while True:
+      if Com_Open_Flag == com_state.OPEN and usart_process.is_alive() == False:
+        Com_Open_Flag = com_state.CLOSE
+        working_com = None
+        _1000msTimer.pause()
+        clear(heartbeat)
+        if self.send_auto.isChecked():
+          auto_send_timer.pause()
+          self.send_auto.setChecked(False)  #取消勾选自动发送
+          self.send_freq.setEnabled(True)   #允许发送时间间隔设置
+        
+        self.send_file_click.setEnabled(False)    
+        self.send_auto.setCheckable(False) #不允许自动发送按钮勾选  每次关闭串口必须禁止  
+        self.Send_Data.setEnabled(False)  #禁止发送按钮
+        self.Com_Band.setEnabled(True)  # 串口号和波特率变为可选择
+        self.Com_Port.setEnabled(True)
+        self.Open_Com.setText("打开串口")
+        break;
+      elif Com_Open_Flag == com_state.CLOSE:
+        break
+      
+      time.sleep(0.001)
+        
+        
+    
    
 
   def recieve_data(self):
