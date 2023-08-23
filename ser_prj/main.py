@@ -363,7 +363,6 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       if self.file_size > 0:
         print(self.file_selected.text())
         if self.file_selected.text() == self.fname[0]:
-          self.f = open(self.fname[0], 'rb')
           self.send_file_thread = Thread(target=self.send_file_process)
           self.send_file_thread.start()
               
@@ -410,6 +409,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       for i in range(0,data_group):
         
         if self.sendProgress.wasCanceled():
+          self.f.close()
           self.send_process_show_start.update(0)
           self.errCode = com_err_code.FILE_SEND_ERR
           self.comErr.update(self.errCode)
@@ -420,6 +420,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
           tx_data.put(self.file_data_buf)
           self.file_data_buf = list()
         except:
+          self.f.close()
           self.file_data_buf = list()
           self.send_process_show_start.update(0)
           self.errCode = com_err_code.FILE_SEND_ERR
@@ -430,12 +431,14 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         try:
           if send_fail == usart_workState.get(timeout = 3):  #等待一帧发送完毕，超时3秒 
             print("发送失败")
+            self.f.close()
             self.send_process_show_start.update(0)
             self.errCode = com_err_code.FILE_SEND_ERR
             self.comErr.update(self.errCode)
             return      
         except:
           print("发送超时")
+          self.f.close()
           self.send_process_show_start.update(0)
           self.errCode = com_err_code.FILE_SEND_ERR
           self.comErr.update(self.errCode)
@@ -453,10 +456,11 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       if left_data_size>0:
         try:
           self.file_data_buf = self.f.read(left_data_size)
-          self.f.close()
           tx_data.put(self.file_data_buf )
           self.file_data_buf = list()
+          self.f.close()
         except:
+          self.f.close()
           self.file_data_buf = list()
           self.send_process_show_start.update(0)
           self.errCode = com_err_code.FILE_SEND_ERR
@@ -487,15 +491,15 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     else:
       try:
         self.file_data_buf = self.f.read(left_data_size)
-        self.f.close()
         tx_data.put(self.file_data_buf)
         self.file_data_buf = list()
-        
+        self.f.close()
       except:
         self.file_data_buf = list()
         self.send_process_show_start.update(0)
         self.errCode = com_err_code.FILE_SEND_ERR
         self.comErr.update(self.errCode)
+        self.f.close()
         return  
       
       send_fail = 0
