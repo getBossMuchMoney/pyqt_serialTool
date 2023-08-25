@@ -408,7 +408,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     if data_group > 0:
       for i in range(0,data_group):
         
-        if self.sendProgress.wasCanceled():
+        if self.sendProgress.wasCanceled() or Com_Open_Flag == com_state.CLOSE or usart_process.is_alive() == False:
           self.file_size = 0
           self.f.close()
           self.send_process_show_start.update(0)
@@ -431,7 +431,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
           
         send_fail = 0
         try:
-          if send_fail == usart_workState.get(timeout = 3):  #等待一帧发送完毕，超时3秒 
+          if usart_process.is_alive() == False or Com_Open_Flag == com_state.CLOSE or send_fail == usart_workState.get(timeout = 3):  #等待一帧发送完毕，超时3秒 
             print("发送失败")
             self.f.close()
             self.file_size = 0
@@ -475,7 +475,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         
         send_fail = 0
         try:
-          if send_fail == usart_workState.get(timeout = 3):  #等待一帧发送完毕，超时3秒 
+          if usart_process.is_alive() == False or Com_Open_Flag == com_state.CLOSE or send_fail == usart_workState.get(timeout = 3):  #等待一帧发送完毕，超时3秒 
             print("发送失败")
             self.file_size = 0
             self.send_process_show_start.update(0)
@@ -513,7 +513,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       
       send_fail = 0
       try:
-        if send_fail == usart_workState.get(timeout = 3):  #等待一帧发送完毕，超时3秒 
+        if usart_process.is_alive() == False or Com_Open_Flag == com_state.CLOSE or send_fail == usart_workState.get(timeout = 3):  #等待一帧发送完毕，超时3秒 
           print("发送失败")
           self.file_size = 0
           self.send_process_show_start.update(0)
@@ -844,7 +844,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
 
             send_fail = 0
             try:
-              if send_fail == usart_workState.get(timeout = 3):  #等待一帧发送完毕，超时一秒 
+              if usart_process.is_alive() == False or Com_Open_Flag == com_state.CLOSE or send_fail == usart_workState.get(timeout = 3):  #等待一帧发送完毕，超时一秒 
                 print("发送失败")
                 return      
             except:
@@ -881,7 +881,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
 
           send_fail = 0
           try:
-            if send_fail == usart_workState.get(timeout = 3):  #等待一帧发送完毕 
+            if usart_process.is_alive() == False or Com_Open_Flag == com_state.CLOSE or send_fail == usart_workState.get(timeout = 3):  #等待一帧发送完毕 
               print("发送失败")
               return      
           except:
