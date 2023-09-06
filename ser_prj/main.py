@@ -734,7 +734,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       usart_process = Process(target=usart_setting,args=(serial_cfg,usart_workState,rx_data,tx_data,heartbeat))
       usart_process.daemon = True
       usart_process.start()
-      Com_Open_Flag = usart_workState.get(block=True,timeout=5)
+      Com_Open_Flag = usart_workState.get(block=True,timeout=10)
       if Com_Open_Flag == com_state.OPEN:
         working_com = comPort
         self.send_auto.setCheckable(True)   #允许自动发送按钮勾选
