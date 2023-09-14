@@ -13,6 +13,9 @@
   <property name="windowTitle">
    <string>串口助手beta版</string>
   </property>
+  <property name="layoutDirection">
+   <enum>Qt::LeftToRight</enum>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QTextEdit" name="Data_Display">
     <property name="geometry">
@@ -221,8 +224,8 @@
    <widget class="QLineEdit" name="send_freq">
     <property name="geometry">
      <rect>
-      <x>940</x>
-      <y>580</y>
+      <x>920</x>
+      <y>590</y>
       <width>71</width>
       <height>21</height>
      </rect>
@@ -243,8 +246,8 @@
    <widget class="QLabel" name="label_5">
     <property name="geometry">
      <rect>
-      <x>1020</x>
-      <y>580</y>
+      <x>1000</x>
+      <y>590</y>
       <width>54</width>
       <height>20</height>
      </rect>
@@ -257,9 +260,9 @@
     <property name="geometry">
      <rect>
       <x>840</x>
-      <y>580</y>
+      <y>590</y>
       <width>91</width>
-      <height>16</height>
+      <height>21</height>
      </rect>
     </property>
     <property name="text">
@@ -386,6 +389,51 @@
      <string>接收数据:</string>
     </property>
    </widget>
+   <widget class="QLineEdit" name="recSubpackageTimeOut_input">
+    <property name="geometry">
+     <rect>
+      <x>940</x>
+      <y>280</y>
+      <width>71</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="layoutDirection">
+     <enum>Qt::LeftToRight</enum>
+    </property>
+    <property name="echoMode">
+     <enum>QLineEdit::Normal</enum>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_10">
+    <property name="geometry">
+     <rect>
+      <x>1020</x>
+      <y>280</y>
+      <width>21</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>ms</string>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="subpackageCheck">
+    <property name="geometry">
+     <rect>
+      <x>840</x>
+      <y>280</y>
+      <width>91</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>接收分包超时</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -393,7 +441,7 @@
      <x>0</x>
      <y>0</y>
      <width>1160</width>
-     <height>26</height>
+     <height>23</height>
     </rect>
    </property>
   </widget>
@@ -513,6 +561,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>subpackageCheck</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>subpackage_click()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>863</x>
+     <y>311</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>900</x>
+     <y>239</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>cal_fuc()</slot>
@@ -524,5 +588,6 @@
   <slot>switch_encodingFormat()</slot>
   <slot>open_file()</slot>
   <slot>send_file()</slot>
+  <slot>subpackage_click()</slot>
  </slots>
 </ui>

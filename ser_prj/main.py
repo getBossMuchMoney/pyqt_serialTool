@@ -303,6 +303,12 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     validator.setRange(0, 999999)  #定时发送范围 单位毫秒
     # 设置验证器到 send_freq 中
     self.send_freq.setValidator(validator)
+    
+    recSubpackageTimeOut_validator = QIntValidator()
+    recSubpackageTimeOut_validator.setRange(0, 999)
+    self.recSubpackageTimeOut_input.setValidator(recSubpackageTimeOut_validator)
+    self.recSubpackageTimeOut_input.setText(str(0))
+    
  
     self.ComReflash.clicked.connect(self.com_reflash)
     self.combuf = 0
@@ -318,8 +324,16 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     for i in range(0,len(band)):
       self.Com_Band.addItem(band[i])
       
-    
-      
+  
+  def subpackage_click(self):
+    if self.subpackageCheck.isChecked():
+      time = int(self.recSubpackageTimeOut_input.text())
+      if time>0:
+        {}
+          
+    else:
+      {}
+   
     
   def send_process_count_reflash(self,cnt):
     self.sendProgress.setValue(cnt)
