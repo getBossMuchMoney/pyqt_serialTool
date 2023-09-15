@@ -86,6 +86,7 @@ usart_data = Queue()
 rx_data = Queue()
 tx_data = Queue()
 heartbeat = Queue()
+subPkg_timeout = Value('i', 0)
 comState = Value('i',com_state.CLOSE) 
 comListTimer = msTimer(None,0)
 auto_send_timer = msTimer(None,0)
@@ -102,6 +103,18 @@ sSerial = 0
 recClose_event = Event()
 sendClose_event = Event()
 pprocess_killed = False
+subpkgTimeCNT = 0
+subpkgTimeCfg = 0
+recvStart = 0
+subpkgRecFinish = 0
+recvMsgBuff = list()
+_1msTimer = msTimer_Call(1)
+@_1msTimer.msTimer_callback()
+def subpackage_timecheck():
+  global subpkgTimeCNT,subpkgTimeCfg
+  if subpkgTimeCNT < subpkgTimeCfg and recvStart == 1:
+     subpkgTimeCNT+=1
+
 
 _2000msTimer = msTimer_Call(2000)
 @_2000msTimer.msTimer_callback()
@@ -117,14 +130,21 @@ def clear(q):
  
 
 #串口接收数据处理线程
-def rec_deal(recClose_event,rx_data):
-  global sSerial,tt
+def rec_deal(recClose_event,rx_data,subPkg_timeout):
+  global sSerial,tt,subpkgTimeCfg,subpkgTimeCNT,recvMsgBuff,subpkgRecFinish,recvStart
+  
   while not recClose_event.is_set(): 
-
-    data = sSerial.read_all()
-    if len(data)>0:
-      rx_data.put(data)
+    subpkgTimeCfg = subPkg_timeout.value
+    recdata = sSerial.read_all()
+    if len(recdata)>0:
+      recvStart = 1
+      recvMsgBuff += recdata
+      subpkgTimeCNT = 0
+         
     else:
+      if subpkgTimeCNT == subpkgTimeCfg:
+        rx_data.put(recvMsgBuff)
+        recvMsgBuff = list()
       time.sleep(0.001)
 
 
@@ -148,7 +168,7 @@ def send_deal(sendClose_event,usart_workState,tx_data):
 
 
 # 进行串口配置
-def usart_setting(serial_cfg,usart_workState,rx_data,tx_data,heartbeat):
+def usart_setting(serial_cfg,usart_workState,rx_data,tx_data,heartbeat,subPkg_timeout):
   global sSerial,recClose_event
   try:
     seriConf = serial_cfg.get(block=True)
@@ -160,11 +180,12 @@ def usart_setting(serial_cfg,usart_workState,rx_data,tx_data,heartbeat):
      
   if sSerial.isOpen() == True:
     print("串口打开成功")
-    rec_thread = Thread(target=rec_deal,args=(recClose_event,rx_data))
+    rec_thread = Thread(target=rec_deal,args=(recClose_event,rx_data,subPkg_timeout))
     send_thread = Thread(target=send_deal,args=(sendClose_event,usart_workState,tx_data))
     rec_thread.start()
     send_thread.start()
     _2000msTimer.start()
+    _1msTimer.start()
     usart_workState.put(com_state.OPEN)
     while True:
       if pprocess_killed == True:
@@ -176,6 +197,7 @@ def usart_setting(serial_cfg,usart_workState,rx_data,tx_data,heartbeat):
         clear(tx_data)
         sSerial.close()
         _2000msTimer.pause()
+        _1msTimer.pause()
         break 
         
       if serial_cfg.empty() == False: 
@@ -189,6 +211,7 @@ def usart_setting(serial_cfg,usart_workState,rx_data,tx_data,heartbeat):
           clear(tx_data)
           sSerial.close()
           _2000msTimer.pause()
+          _1msTimer.pause()
           break 
         
       if heartbeat.empty() == False:
@@ -326,13 +349,16 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       
   
   def subpackage_click(self):
+    global subPkg_timeout
     if self.subpackageCheck.isChecked():
+      self.recSubpackageTimeOut_input.setEnabled(False)
       time = int(self.recSubpackageTimeOut_input.text())
       if time>0:
-        {}
+        subPkg_timeout.value = time
           
     else:
-      {}
+      self.recSubpackageTimeOut_input.setEnabled(True)
+      subPkg_timeout.value = 0
    
     
   def send_process_count_reflash(self,cnt):
@@ -745,7 +771,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       cfg_list = [comPort,comBand]
       # serial_cfg = Manager().list(range(2))
       serial_cfg.put(cfg_list)
-      usart_process = Process(target=usart_setting,args=(serial_cfg,usart_workState,rx_data,tx_data,heartbeat))
+      usart_process = Process(target=usart_setting,args=(serial_cfg,usart_workState,rx_data,tx_data,heartbeat,subPkg_timeout))
       usart_process.daemon = True
       usart_process.start()
       Com_Open_Flag = usart_workState.get(block=True,timeout=10)
