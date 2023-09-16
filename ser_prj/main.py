@@ -106,8 +106,8 @@ pprocess_killed = False
 subpkgTimeCNT = 0
 subpkgTimeCfg = 0
 recvStart = 0
-subpkgRecFinish = 0
 recvMsgBuff = list()
+recvLen = 0
 _1msTimer = msTimer_Call(1)
 @_1msTimer.msTimer_callback()
 def subpackage_timecheck():
@@ -131,21 +131,30 @@ def clear(q):
 
 #串口接收数据处理线程
 def rec_deal(recClose_event,rx_data,subPkg_timeout):
-  global sSerial,tt,subpkgTimeCfg,subpkgTimeCNT,recvMsgBuff,subpkgRecFinish,recvStart
+  global sSerial,tt,subpkgTimeCfg,subpkgTimeCNT,recvMsgBuff,recvStart,recvLen
   
   while not recClose_event.is_set(): 
     subpkgTimeCfg = subPkg_timeout.value
     recdata = sSerial.read_all()
-    if len(recdata)>0:
+    dataLen = len(recdata)
+    if dataLen>0:
+      recvLen += dataLen
       recvStart = 1
       recvMsgBuff += recdata
       subpkgTimeCNT = 0
-         
-    else:
-      if subpkgTimeCNT == subpkgTimeCfg:
+
+      if 0 == subpkgTimeCfg:
+        recvLen = 0
         rx_data.put(recvMsgBuff)
         recvMsgBuff = list()
-      time.sleep(0.001)
+         
+    else:
+      if subpkgTimeCNT == subpkgTimeCfg and recvLen > 0:
+        recvLen = 0
+        rx_data.put(recvMsgBuff)
+        recvMsgBuff = list()
+      else:
+        time.sleep(0.001)
 
 
 def send_deal(sendClose_event,usart_workState,tx_data):
@@ -849,7 +858,6 @@ class Mywindow(QMainWindow, Ui_MainWindow):
   def drag_scroll(self):
     self.Data_Display.moveCursor(QTextCursor.End)  #数据刷新滚动条自动向下滚动
 
-
   #槽函数
   def send_data_click(self):
     if Com_Open_Flag == com_state.OPEN:
@@ -897,11 +905,8 @@ class Mywindow(QMainWindow, Ui_MainWindow):
             if self.recHexShow.isChecked():
               show_str = (' '.join([hex(x)[2:].zfill(2) for x in Data_Need_Send])).upper()
             else:
-              try:
-                show_str = str(Data_Need_Send, encoding=self.now_enco_form)
-              except:
-                show_str = (''.join('?' for x in Data_Need_Send))
-              
+              show_str = Data_Need_Send.decode(encoding=self.now_enco_form,errors='replace')
+  
             show_str = '[' + timeStr + ']' + "发→◇" + show_str + '\n'
             self.ui_update.update(show_str)
             
@@ -948,10 +953,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     if self.recHexShow.isChecked():
       show_str = (' '.join([hex(x)[2:].zfill(2) for x in Data])).upper()
     else:
-      try:
-        show_str = str(Data, encoding=self.now_enco_form)
-      except:
-        show_str = (''.join('?' for x in Data))
+      show_str = bytes(Data).decode(encoding=self.now_enco_form,errors='replace')
     
     timeStr = get_strTime()
     show_str = '[' + timeStr + ']' + "收←◆" + show_str + '\n'
