@@ -328,7 +328,6 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     self.sendLength.setText(str(0))
     self.receiveLength.setText(str(0))
 
-    
     # 创建一个整数验证器
     validator = QIntValidator()
     # 设置验证器的范围，这里可以设置允许的最小值和最大值
@@ -587,7 +586,8 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       
   #ui刷新槽函数
   def ui_show_refresh(self,data):
-    self.Data_Display.insertPlainText(data)
+    self.Data_Display.append(data)
+
 
   #发送数量刷新槽函数
   def send_cnt_reflash(self):

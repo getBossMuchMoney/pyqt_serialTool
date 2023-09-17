@@ -33,7 +33,7 @@
      <enum>Qt::ScrollBarAsNeeded</enum>
     </property>
     <property name="textInteractionFlags">
-     <set>Qt::LinksAccessibleByKeyboard|Qt::LinksAccessibleByMouse|Qt::TextBrowserInteraction|Qt::TextEditable|Qt::TextSelectableByMouse</set>
+     <set>Qt::TextEditorInteraction</set>
     </property>
     <property name="placeholderText">
      <string/>
@@ -484,22 +484,6 @@
     <hint type="destinationlabel">
      <x>926</x>
      <y>516</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>Data_Display</sender>
-   <signal>textChanged()</signal>
-   <receiver>MainWindow</receiver>
-   <slot>drag_scroll()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>405</x>
-     <y>250</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>432</x>
-     <y>478</y>
     </hint>
    </hints>
   </connection>
