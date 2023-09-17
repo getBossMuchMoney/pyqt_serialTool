@@ -86,6 +86,7 @@ usart_data = Queue()
 rx_data = Queue()
 tx_data = Queue()
 heartbeat = Queue()
+subPkg_timeout = Value('i', 0)
 comState = Value('i',com_state.CLOSE) 
 comListTimer = msTimer(None,0)
 auto_send_timer = msTimer(None,0)
@@ -102,6 +103,18 @@ sSerial = 0
 recClose_event = Event()
 sendClose_event = Event()
 pprocess_killed = False
+subpkgTimeCNT = 0
+subpkgTimeCfg = 0
+recvStart = 0
+recvMsgBuff = list()
+recvLen = 0
+_1msTimer = msTimer_Call(1)
+@_1msTimer.msTimer_callback()
+def subpackage_timecheck():
+  global subpkgTimeCNT,subpkgTimeCfg
+  if subpkgTimeCNT < subpkgTimeCfg and recvStart == 1:
+     subpkgTimeCNT+=1
+
 
 _2000msTimer = msTimer_Call(2000)
 @_2000msTimer.msTimer_callback()
@@ -117,15 +130,31 @@ def clear(q):
  
 
 #串口接收数据处理线程
-def rec_deal(recClose_event,rx_data):
-  global sSerial,tt
+def rec_deal(recClose_event,rx_data,subPkg_timeout):
+  global sSerial,tt,subpkgTimeCfg,subpkgTimeCNT,recvMsgBuff,recvStart,recvLen
+  
   while not recClose_event.is_set(): 
+    subpkgTimeCfg = subPkg_timeout.value
+    recdata = sSerial.read_all()
+    dataLen = len(recdata)
+    if dataLen>0:
+      recvLen += dataLen
+      recvStart = 1
+      recvMsgBuff += recdata
+      subpkgTimeCNT = 0
 
-    data = sSerial.read_all()
-    if len(data)>0:
-      rx_data.put(data)
+      if 0 == subpkgTimeCfg:
+        recvLen = 0
+        rx_data.put(recvMsgBuff)
+        recvMsgBuff = list()
+         
     else:
-      time.sleep(0.001)
+      if subpkgTimeCNT == subpkgTimeCfg and recvLen > 0:
+        recvLen = 0
+        rx_data.put(recvMsgBuff)
+        recvMsgBuff = list()
+      else:
+        time.sleep(0.001)
 
 
 def send_deal(sendClose_event,usart_workState,tx_data):
@@ -148,7 +177,7 @@ def send_deal(sendClose_event,usart_workState,tx_data):
 
 
 # 进行串口配置
-def usart_setting(serial_cfg,usart_workState,rx_data,tx_data,heartbeat):
+def usart_setting(serial_cfg,usart_workState,rx_data,tx_data,heartbeat,subPkg_timeout):
   global sSerial,recClose_event
   try:
     seriConf = serial_cfg.get(block=True)
@@ -160,11 +189,12 @@ def usart_setting(serial_cfg,usart_workState,rx_data,tx_data,heartbeat):
      
   if sSerial.isOpen() == True:
     print("串口打开成功")
-    rec_thread = Thread(target=rec_deal,args=(recClose_event,rx_data))
+    rec_thread = Thread(target=rec_deal,args=(recClose_event,rx_data,subPkg_timeout))
     send_thread = Thread(target=send_deal,args=(sendClose_event,usart_workState,tx_data))
     rec_thread.start()
     send_thread.start()
     _2000msTimer.start()
+    _1msTimer.start()
     usart_workState.put(com_state.OPEN)
     while True:
       if pprocess_killed == True:
@@ -176,6 +206,7 @@ def usart_setting(serial_cfg,usart_workState,rx_data,tx_data,heartbeat):
         clear(tx_data)
         sSerial.close()
         _2000msTimer.pause()
+        _1msTimer.pause()
         break 
         
       if serial_cfg.empty() == False: 
@@ -189,6 +220,7 @@ def usart_setting(serial_cfg,usart_workState,rx_data,tx_data,heartbeat):
           clear(tx_data)
           sSerial.close()
           _2000msTimer.pause()
+          _1msTimer.pause()
           break 
         
       if heartbeat.empty() == False:
@@ -296,13 +328,18 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     self.sendLength.setText(str(0))
     self.receiveLength.setText(str(0))
 
-    
     # 创建一个整数验证器
     validator = QIntValidator()
     # 设置验证器的范围，这里可以设置允许的最小值和最大值
     validator.setRange(0, 999999)  #定时发送范围 单位毫秒
     # 设置验证器到 send_freq 中
     self.send_freq.setValidator(validator)
+    
+    recSubpackageTimeOut_validator = QIntValidator()
+    recSubpackageTimeOut_validator.setRange(0, 999)
+    self.recSubpackageTimeOut_input.setValidator(recSubpackageTimeOut_validator)
+    self.recSubpackageTimeOut_input.setText(str(0))
+    
  
     self.ComReflash.clicked.connect(self.com_reflash)
     self.combuf = 0
@@ -318,8 +355,19 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     for i in range(0,len(band)):
       self.Com_Band.addItem(band[i])
       
-    
-      
+  
+  def subpackage_click(self):
+    global subPkg_timeout
+    if self.subpackageCheck.isChecked():
+      self.recSubpackageTimeOut_input.setEnabled(False)
+      time = int(self.recSubpackageTimeOut_input.text())
+      if time>0:
+        subPkg_timeout.value = time
+          
+    else:
+      self.recSubpackageTimeOut_input.setEnabled(True)
+      subPkg_timeout.value = 0
+   
     
   def send_process_count_reflash(self,cnt):
     self.sendProgress.setValue(cnt)
@@ -538,7 +586,8 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       
   #ui刷新槽函数
   def ui_show_refresh(self,data):
-    self.Data_Display.insertPlainText(data)
+    self.Data_Display.append(data)
+
 
   #发送数量刷新槽函数
   def send_cnt_reflash(self):
@@ -731,7 +780,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
       cfg_list = [comPort,comBand]
       # serial_cfg = Manager().list(range(2))
       serial_cfg.put(cfg_list)
-      usart_process = Process(target=usart_setting,args=(serial_cfg,usart_workState,rx_data,tx_data,heartbeat))
+      usart_process = Process(target=usart_setting,args=(serial_cfg,usart_workState,rx_data,tx_data,heartbeat,subPkg_timeout))
       usart_process.daemon = True
       usart_process.start()
       Com_Open_Flag = usart_workState.get(block=True,timeout=10)
@@ -809,7 +858,6 @@ class Mywindow(QMainWindow, Ui_MainWindow):
   def drag_scroll(self):
     self.Data_Display.moveCursor(QTextCursor.End)  #数据刷新滚动条自动向下滚动
 
-
   #槽函数
   def send_data_click(self):
     if Com_Open_Flag == com_state.OPEN:
@@ -857,11 +905,8 @@ class Mywindow(QMainWindow, Ui_MainWindow):
             if self.recHexShow.isChecked():
               show_str = (' '.join([hex(x)[2:].zfill(2) for x in Data_Need_Send])).upper()
             else:
-              try:
-                show_str = str(Data_Need_Send, encoding=self.now_enco_form)
-              except:
-                show_str = (''.join('?' for x in Data_Need_Send))
-              
+              show_str = Data_Need_Send.decode(encoding=self.now_enco_form,errors='replace')
+  
             show_str = '[' + timeStr + ']' + "发→◇" + show_str + '\n'
             self.ui_update.update(show_str)
             
@@ -908,10 +953,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
     if self.recHexShow.isChecked():
       show_str = (' '.join([hex(x)[2:].zfill(2) for x in Data])).upper()
     else:
-      try:
-        show_str = str(Data, encoding=self.now_enco_form)
-      except:
-        show_str = (''.join('?' for x in Data))
+      show_str = bytes(Data).decode(encoding=self.now_enco_form,errors='replace')
     
     timeStr = get_strTime()
     show_str = '[' + timeStr + ']' + "收←◆" + show_str + '\n'
