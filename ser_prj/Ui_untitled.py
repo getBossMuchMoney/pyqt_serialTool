@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'd:\github_prj\pyqt_serialTool\ser_prj\untitled.ui'
+# Form implementation generated from reading ui file 'e:\gitHub_prj\pyqt_serialTool\ser_prj\untitled.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.9
 #
@@ -71,23 +71,21 @@ class Ui_MainWindow(object):
         self.ComReflash.setGeometry(QtCore.QRect(1040, 60, 111, 31))
         self.ComReflash.setObjectName("ComReflash")
         self.send_freq = QtWidgets.QLineEdit(self.centralwidget)
-        self.send_freq.setGeometry(QtCore.QRect(920, 590, 71, 21))
+        self.send_freq.setGeometry(QtCore.QRect(940, 590, 71, 21))
         self.send_freq.setEchoMode(QtWidgets.QLineEdit.Normal)
-        self.send_freq.setAlignment(
-            QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing | QtCore.Qt.AlignVCenter
-        )
+        self.send_freq.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
         self.send_freq.setDragEnabled(False)
         self.send_freq.setReadOnly(False)
         self.send_freq.setObjectName("send_freq")
         self.label_5 = QtWidgets.QLabel(self.centralwidget)
-        self.label_5.setGeometry(QtCore.QRect(1000, 590, 54, 20))
+        self.label_5.setGeometry(QtCore.QRect(1020, 590, 54, 20))
         self.label_5.setObjectName("label_5")
         self.send_auto = QtWidgets.QCheckBox(self.centralwidget)
         self.send_auto.setGeometry(QtCore.QRect(840, 590, 91, 21))
         self.send_auto.setCheckable(False)
         self.send_auto.setObjectName("send_auto")
         self.encodingFormat = QtWidgets.QPushButton(self.centralwidget)
-        self.encodingFormat.setGeometry(QtCore.QRect(900, 437, 71, 31))
+        self.encodingFormat.setGeometry(QtCore.QRect(910, 437, 71, 31))
         self.encodingFormat.setObjectName("encodingFormat")
         self.label_6 = QtWidgets.QLabel(self.centralwidget)
         self.label_6.setGeometry(QtCore.QRect(840, 440, 61, 31))
@@ -117,22 +115,20 @@ class Ui_MainWindow(object):
         self.label_8.setGeometry(QtCore.QRect(490, 630, 71, 21))
         self.label_8.setObjectName("label_8")
         self.recSubpackageTimeOut_input = QtWidgets.QLineEdit(self.centralwidget)
-        self.recSubpackageTimeOut_input.setGeometry(QtCore.QRect(940, 280, 71, 20))
+        self.recSubpackageTimeOut_input.setGeometry(QtCore.QRect(970, 280, 71, 20))
         self.recSubpackageTimeOut_input.setLayoutDirection(QtCore.Qt.LeftToRight)
         self.recSubpackageTimeOut_input.setEchoMode(QtWidgets.QLineEdit.Normal)
-        self.recSubpackageTimeOut_input.setAlignment(
-            QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing | QtCore.Qt.AlignVCenter
-        )
+        self.recSubpackageTimeOut_input.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
         self.recSubpackageTimeOut_input.setObjectName("recSubpackageTimeOut_input")
         self.label_10 = QtWidgets.QLabel(self.centralwidget)
-        self.label_10.setGeometry(QtCore.QRect(1020, 280, 21, 16))
+        self.label_10.setGeometry(QtCore.QRect(1050, 280, 21, 16))
         self.label_10.setObjectName("label_10")
         self.subpackageCheck = QtWidgets.QCheckBox(self.centralwidget)
-        self.subpackageCheck.setGeometry(QtCore.QRect(840, 280, 91, 21))
+        self.subpackageCheck.setGeometry(QtCore.QRect(840, 280, 121, 21))
         self.subpackageCheck.setObjectName("subpackageCheck")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1160, 23))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1160, 26))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
@@ -140,13 +136,13 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
 
         self.retranslateUi(MainWindow)
-        self.Send_Data.clicked.connect(MainWindow.send_data_click)  # type: ignore
-        self.Open_Com.clicked.connect(MainWindow.open_com_click)  # type: ignore
-        self.send_auto.clicked.connect(MainWindow.send_auto_click)  # type: ignore
-        self.encodingFormat.clicked.connect(MainWindow.switch_encodingFormat)  # type: ignore
-        self.open_file_click.clicked.connect(MainWindow.open_file)  # type: ignore
-        self.send_file_click.clicked.connect(MainWindow.send_file)  # type: ignore
-        self.subpackageCheck.clicked.connect(MainWindow.subpackage_click)  # type: ignore
+        self.Send_Data.clicked.connect(MainWindow.send_data_click) # type: ignore
+        self.Open_Com.clicked.connect(MainWindow.open_com_click) # type: ignore
+        self.send_auto.clicked.connect(MainWindow.send_auto_click) # type: ignore
+        self.encodingFormat.clicked.connect(MainWindow.switch_encodingFormat) # type: ignore
+        self.open_file_click.clicked.connect(MainWindow.open_file) # type: ignore
+        self.send_file_click.clicked.connect(MainWindow.send_file) # type: ignore
+        self.subpackageCheck.clicked.connect(MainWindow.subpackage_click) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
