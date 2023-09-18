@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import (
     QFileDialog,
     QProgressDialog,
 )
-from untitled_ui import Ui_MainWindow
+from Ui_untitled import Ui_MainWindow
 from PyQt5.QtCore import Qt, pyqtSignal, QObject, QThread
 import multiprocessing
 from multiprocessing import Pool, Process, Value, Array, Manager, Queue
