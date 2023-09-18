@@ -869,22 +869,22 @@ class Mywindow(QMainWindow, Ui_MainWindow):
   def send_data_process(self):
     if Com_Open_Flag == com_state.OPEN and not self.send_file_thread.is_alive() == True:
       Data_Need_Send = self.Send_Data_Display.toPlainText()
-      dlen = len(Data_Need_Send)
-      if dlen>0:
-        if dlen > 1024:
-          if self.send_auto.isChecked():
-            auto_send_timer.pause()
-            self.send_auto.setChecked(False)  #取消勾选自动发送
-            self.send_freq.setEnabled(True)   #允许发送时间间隔设置
-          
-          if self.errCode == 0:
-            self.errCode = com_err_code.DATA_LEN_OVERRANGE_ERR
-            self.comErr.update(self.errCode)
-            
-          return
-              
+      if len(Data_Need_Send)>0:
+           
         if self.sendHex.isChecked():        
-          Data_Need_Send = Data_Need_Send.replace(" ", "")  # 删除空格           
+          Data_Need_Send = Data_Need_Send.replace(" ", "")  # 删除空格
+          if len(Data_Need_Send)/2 > 1024:
+            if self.send_auto.isChecked():
+              auto_send_timer.pause()
+              self.send_auto.setChecked(False)  #取消勾选自动发送
+              self.send_freq.setEnabled(True)   #允许发送时间间隔设置
+          
+            if self.errCode == 0:
+              self.errCode = com_err_code.DATA_LEN_OVERRANGE_ERR
+              self.comErr.update(self.errCode)
+            
+            return
+                             
           try:
             Data_Need_Send = bytes.fromhex(Data_Need_Send)
             tx_data.put(Data_Need_Send)
@@ -921,6 +921,19 @@ class Mywindow(QMainWindow, Ui_MainWindow):
             self.comErr.update(self.errCode)
                        
         else:
+          show_str = Data_Need_Send.encode(self.now_enco_form).hex()
+          if len(show_str)/2 > 1024:
+            if self.send_auto.isChecked():
+              auto_send_timer.pause()
+              self.send_auto.setChecked(False)  #取消勾选自动发送
+              self.send_freq.setEnabled(True)   #允许发送时间间隔设置
+          
+            if self.errCode == 0:
+              self.errCode = com_err_code.DATA_LEN_OVERRANGE_ERR
+              self.comErr.update(self.errCode)
+            
+            return
+          
           tx_data.put(Data_Need_Send.encode(self.now_enco_form))  #发送
           timeStr = get_strTime()
 
@@ -938,9 +951,8 @@ class Mywindow(QMainWindow, Ui_MainWindow):
 
         
           if self.recHexShow.isChecked():
-            show_str = Data_Need_Send.encode(self.now_enco_form).hex()
-            show_str = bytes.fromhex(show_str)
-            show_str = (' '.join([hex(x)[2:].zfill(2) for x in show_str])).upper()
+            print(show_str)
+            show_str = (' '.join([show_str[i:i+2] for i in range(0, len(show_str), 2)])).upper()
           else:
             show_str = Data_Need_Send
                          
