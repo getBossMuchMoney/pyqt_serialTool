@@ -150,8 +150,11 @@ def rec_deal(recClose_event, rx_data, subPkg_timeout):
             recvStart = 1
             recvMsgBuff += recdata
             subpkgTimeCNT = 0
+            
+            if recvLen > 4000:
+                subpkgTimeCNT = subpkgTimeCfg
 
-            if 0 == subpkgTimeCfg:
+            if 0 == subpkgTimeCfg or subpkgTimeCNT == subpkgTimeCfg:
                 recvLen = 0
                 rx_data.put(recvMsgBuff)
                 recvMsgBuff = list()
