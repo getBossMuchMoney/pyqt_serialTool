@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'e:\gitHub_prj\pyqt_serialTool\ser_prj\untitled.ui'
+# Form implementation generated from reading ui file 'd:\github_prj\pyqt_serialTool\ser_prj\untitled.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.9
 #
@@ -87,20 +87,20 @@ class Ui_MainWindow(object):
         self.send_auto.setCheckable(False)
         self.send_auto.setObjectName("send_auto")
         self.encodingFormat = QtWidgets.QPushButton(self.centralwidget)
-        self.encodingFormat.setGeometry(QtCore.QRect(910, 437, 71, 31))
+        self.encodingFormat.setGeometry(QtCore.QRect(890, 440, 71, 31))
         self.encodingFormat.setObjectName("encodingFormat")
         self.label_6 = QtWidgets.QLabel(self.centralwidget)
         self.label_6.setGeometry(QtCore.QRect(840, 440, 61, 31))
         self.label_6.setObjectName("label_6")
         self.open_file_click = QtWidgets.QToolButton(self.centralwidget)
-        self.open_file_click.setGeometry(QtCore.QRect(840, 340, 81, 31))
+        self.open_file_click.setGeometry(QtCore.QRect(840, 320, 81, 31))
         self.open_file_click.setObjectName("open_file_click")
         self.send_file_click = QtWidgets.QPushButton(self.centralwidget)
         self.send_file_click.setEnabled(False)
-        self.send_file_click.setGeometry(QtCore.QRect(930, 380, 93, 28))
+        self.send_file_click.setGeometry(QtCore.QRect(930, 360, 93, 28))
         self.send_file_click.setObjectName("send_file_click")
         self.file_selected = QtWidgets.QLineEdit(self.centralwidget)
-        self.file_selected.setGeometry(QtCore.QRect(930, 340, 221, 31))
+        self.file_selected.setGeometry(QtCore.QRect(930, 320, 221, 31))
         self.file_selected.setObjectName("file_selected")
         self.sendLength = QtWidgets.QLineEdit(self.centralwidget)
         self.sendLength.setGeometry(QtCore.QRect(350, 630, 101, 20))
@@ -117,7 +117,7 @@ class Ui_MainWindow(object):
         self.label_8.setGeometry(QtCore.QRect(490, 630, 71, 21))
         self.label_8.setObjectName("label_8")
         self.recSubpackageTimeOut_input = QtWidgets.QLineEdit(self.centralwidget)
-        self.recSubpackageTimeOut_input.setGeometry(QtCore.QRect(960, 280, 71, 20))
+        self.recSubpackageTimeOut_input.setGeometry(QtCore.QRect(1050, 400, 71, 20))
         self.recSubpackageTimeOut_input.setLayoutDirection(QtCore.Qt.LeftToRight)
         self.recSubpackageTimeOut_input.setEchoMode(QtWidgets.QLineEdit.Normal)
         self.recSubpackageTimeOut_input.setAlignment(
@@ -125,14 +125,17 @@ class Ui_MainWindow(object):
         )
         self.recSubpackageTimeOut_input.setObjectName("recSubpackageTimeOut_input")
         self.label_10 = QtWidgets.QLabel(self.centralwidget)
-        self.label_10.setGeometry(QtCore.QRect(1040, 280, 21, 16))
+        self.label_10.setGeometry(QtCore.QRect(1130, 400, 21, 16))
         self.label_10.setObjectName("label_10")
         self.subpackageCheck = QtWidgets.QCheckBox(self.centralwidget)
-        self.subpackageCheck.setGeometry(QtCore.QRect(840, 280, 121, 21))
+        self.subpackageCheck.setGeometry(QtCore.QRect(950, 400, 91, 21))
         self.subpackageCheck.setObjectName("subpackageCheck")
+        self.SaveDataCheck = QtWidgets.QCheckBox(self.centralwidget)
+        self.SaveDataCheck.setGeometry(QtCore.QRect(840, 400, 71, 21))
+        self.SaveDataCheck.setObjectName("SaveDataCheck")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1160, 26))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1160, 23))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
@@ -147,6 +150,7 @@ class Ui_MainWindow(object):
         self.open_file_click.clicked.connect(MainWindow.open_file)  # type: ignore
         self.send_file_click.clicked.connect(MainWindow.send_file)  # type: ignore
         self.subpackageCheck.clicked.connect(MainWindow.subpackage_click)  # type: ignore
+        self.SaveDataCheck.clicked.connect(MainWindow.save_data_click)  # type: ignore
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -173,3 +177,4 @@ class Ui_MainWindow(object):
         self.label_8.setText(_translate("MainWindow", "接收数据:"))
         self.label_10.setText(_translate("MainWindow", "ms"))
         self.subpackageCheck.setText(_translate("MainWindow", "接收分包超时"))
+        self.SaveDataCheck.setText(_translate("MainWindow", "保存数据"))

@@ -16,9 +16,9 @@ import multiprocessing
 from multiprocessing import Pool, Process, Value, Array, Manager, Queue
 from enum import IntEnum
 import time
-from datetime import datetime
 from PyQt5.QtGui import QTextCursor, QIntValidator
 from myTimer import msTimer, msTimer_Call
+import Time_get
 
 
 # 自定义信号量
@@ -150,7 +150,7 @@ def rec_deal(recClose_event, rx_data, subPkg_timeout):
             recvStart = 1
             recvMsgBuff += recdata
             subpkgTimeCNT = 0
-            
+
             if recvLen > 4000:
                 subpkgTimeCNT = subpkgTimeCfg
 
@@ -251,43 +251,6 @@ def Get_Com_List():
     return list(list_ports.comports())
 
 
-def get_strTime():
-    curr_time = datetime.now()
-    hour = curr_time.hour
-    minute = curr_time.minute
-    second = curr_time.second
-
-    if hour < 10:
-        strHour = "0" + str(hour)
-    else:
-        strHour = str(hour)
-
-    if minute < 10:
-        strMinute = "0" + str(minute)
-    else:
-        strMinute = str(minute)
-
-    if second < 10:
-        strSecond = "0" + str(second)
-    else:
-        strSecond = str(second)
-
-    microsecond = str(curr_time.microsecond)
-
-    if len(microsecond) == 3:
-        microsecond = "000"
-    elif len(microsecond) == 4:
-        microsecond = "00" + microsecond[:1]
-    elif len(microsecond) == 5:
-        microsecond = "0" + microsecond[:2]
-    else:
-        microsecond = microsecond[:3]
-
-    timestr = strHour + ":" + strMinute + ":" + strSecond + "." + microsecond
-
-    return timestr
-
-
 # 字节串转整形列表
 def bytesrialtoarray(msg):
     data = []
@@ -342,6 +305,8 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         self.sendLength.setText(str(0))
         self.receiveLength.setText(str(0))
 
+        self.savedatafile = None
+
         # 创建一个整数验证器
         validator = QIntValidator()
         # 设置验证器的范围，这里可以设置允许的最小值和最大值
@@ -366,6 +331,29 @@ class Mywindow(QMainWindow, Ui_MainWindow):
 
         for i in range(0, len(band)):
             self.Com_Band.addItem(band[i])
+
+    def save_data_click(self):
+        if self.SaveDataCheck.isChecked():
+            Time_get.get_DataFileName()
+            self.SaveDataCheck.setEnabled(False)
+            self.create_datafile_thread = Thread(target=self.create_datafile_process)
+            self.create_datafile_thread.start()
+        else:
+            if self.savedatafile != None:
+                self.savedatafile.close()
+                self.savedatafile = None
+
+    def create_datafile_process(self):
+        if not os.path.exists("datafile"):
+            os.makedirs("datafile")
+            print("Folder created")
+        else:
+            print("Folder already exists")
+        filePath = os.getcwd() + "\\datafile\\" + Time_get.get_DataFileName() + ".txt"
+        self.savedatafile = open(filePath, "w")
+        print(self.savedatafile.name)
+        time.sleep(1)
+        self.SaveDataCheck.setEnabled(True)
 
     def subpackage_click(self):
         global subPkg_timeout
@@ -396,7 +384,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         if not self.send_file_thread.is_alive():
             self.fname = QFileDialog.getOpenFileName(
                 self, "打开文件", "/"
-            )  # filter='*.txt'
+            )  # filter='*.txt',此参数指定文件类型
 
             if self.fname[0]:
                 self.file_size = os.path.getsize(self.fname[0])
@@ -407,7 +395,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
                     return
 
                 try:
-                    self.f = open(self.fname[0], "rb")
+                    self.openFile = open(self.fname[0], "rb")
                     self.file_selected.clear()
                     self.file_selected.setText(self.fname[0])
                 except:
@@ -425,7 +413,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
 
                 else:
                     try:
-                        self.f = open(self.file_selected.text(), "rb")
+                        self.openFile = open(self.file_selected.text(), "rb")
                         self.file_size = os.path.getsize(self.file_selected.text())
                         self.send_file_thread = Thread(target=self.send_file_process)
                         self.send_file_thread.start()
@@ -436,7 +424,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
 
             else:
                 try:
-                    self.f = open(self.file_selected.text(), "rb")
+                    self.openFile = open(self.file_selected.text(), "rb")
                     self.file_size = os.path.getsize(self.file_selected.text())
                     self.send_file_thread = Thread(target=self.send_file_process)
                     self.send_file_thread.start()
@@ -468,19 +456,19 @@ class Mywindow(QMainWindow, Ui_MainWindow):
                     or usart_process.is_alive() == False
                 ):
                     self.file_size = 0
-                    self.f.close()
+                    self.openFile.close()
                     self.send_process_show_start.update(0)
                     self.errCode = com_err_code.FILE_SEND_ERR
                     self.comErr.update(self.errCode)
                     return
 
                 try:
-                    self.file_data_buf = self.f.read(256)
+                    self.file_data_buf = self.openFile.read(256)
                     tx_data.put(self.file_data_buf)
                     self.file_data_buf = list()
                 except:
                     self.file_size = 0
-                    self.f.close()
+                    self.openFile.close()
                     self.file_data_buf = list()
                     self.send_process_show_start.update(0)
                     self.errCode = com_err_code.FILE_SEND_ERR
@@ -495,7 +483,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
                         or send_fail == usart_workState.get(timeout=3)
                     ):  # 等待一帧发送完毕，超时3秒
                         print("发送失败")
-                        self.f.close()
+                        self.openFile.close()
                         self.file_size = 0
                         self.send_process_show_start.update(0)
                         self.errCode = com_err_code.FILE_SEND_ERR
@@ -504,7 +492,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
                 except:
                     print("发送超时")
                     self.file_size = 0
-                    self.f.close()
+                    self.openFile.close()
                     self.send_process_show_start.update(0)
                     self.errCode = com_err_code.FILE_SEND_ERR
                     self.comErr.update(self.errCode)
@@ -517,17 +505,17 @@ class Mywindow(QMainWindow, Ui_MainWindow):
 
                 if i == data_group - 1 and left_data_size == 0:
                     self.file_size = 0
-                    self.f.close()
+                    self.openFile.close()
 
             if left_data_size > 0:
                 try:
-                    self.file_data_buf = self.f.read(left_data_size)
+                    self.file_data_buf = self.openFile.read(left_data_size)
                     tx_data.put(self.file_data_buf)
                     self.file_data_buf = list()
-                    self.f.close()
+                    self.openFile.close()
                 except:
                     self.file_size = 0
-                    self.f.close()
+                    self.openFile.close()
                     self.file_data_buf = list()
                     self.send_process_show_start.update(0)
                     self.errCode = com_err_code.FILE_SEND_ERR
@@ -561,17 +549,17 @@ class Mywindow(QMainWindow, Ui_MainWindow):
 
         else:
             try:
-                self.file_data_buf = self.f.read(left_data_size)
+                self.file_data_buf = self.openFile.read(left_data_size)
                 tx_data.put(self.file_data_buf)
                 self.file_data_buf = list()
-                self.f.close()
+                self.openFile.close()
             except:
                 self.file_size = 0
                 self.file_data_buf = list()
                 self.send_process_show_start.update(0)
                 self.errCode = com_err_code.FILE_SEND_ERR
                 self.comErr.update(self.errCode)
-                self.f.close()
+                self.openFile.close()
                 return
 
             send_fail = 0
@@ -862,7 +850,6 @@ class Mywindow(QMainWindow, Ui_MainWindow):
                 self.recv_len += len(data)
                 self.recv_count_update.update()
                 self.Set_Display_Data(data)
-
             else:
                 time.sleep(0.001)  # 降低cpu占用
 
@@ -897,7 +884,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
                     try:
                         Data_Need_Send = bytes.fromhex(Data_Need_Send)
                         tx_data.put(Data_Need_Send)
-                        timeStr = get_strTime()
+                        timeStr = Time_get.get_strTime()
 
                         send_fail = 0
                         try:
@@ -927,6 +914,9 @@ class Mywindow(QMainWindow, Ui_MainWindow):
                         show_str = "[" + timeStr + "]" + "发→◇" + show_str + "\n"
                         self.ui_update.update(show_str)
 
+                        if self.SaveDataCheck.isChecked() and self.savedatafile != None:
+                            self.savedatafile.write(show_str + "\n")
+
                     except:
                         if self.send_auto.isChecked():
                             auto_send_timer.pause()  # 自动发送定时器关闭
@@ -952,7 +942,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
                         return
 
                     tx_data.put(Data_Need_Send.encode(self.now_enco_form))  # 发送
-                    timeStr = get_strTime()
+                    timeStr = Time_get.get_strTime()
 
                     send_fail = 0
                     try:
@@ -985,15 +975,21 @@ class Mywindow(QMainWindow, Ui_MainWindow):
                     show_str = "[" + timeStr + "]" + "发→◇" + show_str + "\n"
                     self.ui_update.update(show_str)
 
+                    if self.SaveDataCheck.isChecked() and self.savedatafile != None:
+                        self.savedatafile.write(show_str + "\n")
+
     def Set_Display_Data(self, Data):
         if self.recHexShow.isChecked():
             show_str = (" ".join([hex(x)[2:].zfill(2) for x in Data])).upper()
         else:
             show_str = bytes(Data).decode(encoding=self.now_enco_form, errors="replace")
 
-        timeStr = get_strTime()
+        timeStr = Time_get.get_strTime()
         show_str = "[" + timeStr + "]" + "收←◆" + show_str + "\n"
         self.ui_update.update(show_str)
+
+        if self.SaveDataCheck.isChecked() and self.savedatafile != None:
+            self.savedatafile.write(show_str + "\n")
 
 
 def ui_process():
