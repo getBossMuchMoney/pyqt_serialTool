@@ -680,24 +680,33 @@ class Mywindow(QMainWindow, Ui_MainWindow):
 
     def com_reflash(self):
         working_com_check = 0
-        global Com_Open_Flag, working_com
+        global working_com
         self.combuf = Get_Com_List()  # 获取串口列表
-        if not self.combuf == self.COM_List:
+        if self.combuf != self.COM_List:
             self.COM_List = self.combuf
             self.Com_Port.clear()  # 清除串口列表显示内容
-            for i in range(0, len(self.COM_List)):  # 将列表导入到下拉框
-                self.Com_Port.addItem(self.COM_List[i].name)
 
-                if not working_com == None:
-                    if working_com == self.COM_List[i].name:
-                        working_com_check = 1
+            if len(self.COM_List) > 0:
+                for i in range(0, len(self.COM_List)):  # 将列表导入到下拉框
+                    self.Com_Port.addItem(self.COM_List[i].name)
 
-                    if working_com_check == 0 and i == (len(self.COM_List) - 1):
-                        self.close_com()
-                        self.Open_Com.setEnabled(True)
-                        # QMessageBox.warning(None, "警告", "选择的串口已不存在！！！", QMessageBox.Ok)
-                        self.errCode = com_err_code.COM_OPEN_ERR
-                        self.comErr.update(self.errCode)
+                    if working_com != None:
+                        if working_com == self.COM_List[i].name:
+                            working_com_check = 1
+
+                        if working_com_check == 0 and i == (len(self.COM_List) - 1):
+                            self.close_com()
+                            self.Open_Com.setEnabled(True)
+                            # QMessageBox.warning(None, "警告", "选择的串口已不存在！！！", QMessageBox.Ok)
+                            self.errCode = com_err_code.COM_OPEN_ERR
+                            self.comErr.update(self.errCode)
+            else:
+                if working_com != None:
+                    self.close_com()
+                    self.Open_Com.setEnabled(True)
+                    # QMessageBox.warning(None, "警告", "选择的串口已不存在！！！", QMessageBox.Ok)
+                    self.errCode = com_err_code.COM_OPEN_ERR
+                    self.comErr.update(self.errCode)
 
     def close_com(self):
         global Com_Open_Flag, working_com

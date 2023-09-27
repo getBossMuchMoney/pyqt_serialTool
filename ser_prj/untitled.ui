@@ -392,7 +392,7 @@
    <widget class="QLineEdit" name="recSubpackageTimeOut_input">
     <property name="geometry">
      <rect>
-      <x>1050</x>
+      <x>1060</x>
       <y>400</y>
       <width>71</width>
       <height>20</height>
@@ -411,7 +411,7 @@
    <widget class="QLabel" name="label_10">
     <property name="geometry">
      <rect>
-      <x>1130</x>
+      <x>1140</x>
       <y>400</y>
       <width>21</width>
       <height>16</height>
@@ -424,14 +424,14 @@
    <widget class="QCheckBox" name="subpackageCheck">
     <property name="geometry">
      <rect>
-      <x>950</x>
+      <x>920</x>
       <y>400</y>
-      <width>91</width>
+      <width>141</width>
       <height>21</height>
      </rect>
     </property>
     <property name="text">
-     <string>接收分包超时</string>
+     <string>设置接收分包组包超时</string>
     </property>
    </widget>
    <widget class="QCheckBox" name="SaveDataCheck">
