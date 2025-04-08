@@ -112,7 +112,7 @@ File_Process_Flag = Value("i", 0)
 @_1000msTimer.msTimer_callback()
 def pprocess_heartbeat():
     heartbeat.put(1)
-    print("心跳开启")
+    # print("心跳开启")
 
 
 # 子进程全局变量
@@ -157,7 +157,7 @@ def getTimerMS():
 
 # 串口接收数据处理线程
 def rec_deal(recClose_event, rx_data, subPkg_timeout, cmdrxQueue, File_Process_Flag):
-    global sSerial, tt, subpkgTimeCfg, subpkgTimeCNT, recvMsgBuff, recvStart, recvLen
+    global sSerial,subpkgTimeCfg, subpkgTimeCNT, recvMsgBuff, recvStart, recvLen
 
     while not recClose_event.is_set():
         subpkgTimeCfg = subPkg_timeout.value
@@ -165,6 +165,9 @@ def rec_deal(recClose_event, rx_data, subPkg_timeout, cmdrxQueue, File_Process_F
         dataLen = len(recdata)
         if dataLen > 0:
             recvLen += dataLen
+            if recvLen == dataLen:
+                strTimeRcv = Time_get.get_strTime()
+                recvMsgBuff.extend([strTimeRcv])
             recvStart = 1
             recvMsgBuff += recdata
             subpkgTimeCNT = 0
@@ -176,7 +179,10 @@ def rec_deal(recClose_event, rx_data, subPkg_timeout, cmdrxQueue, File_Process_F
                 recvLen = 0
                 rx_data.put(recvMsgBuff)
                 if File_Process_Flag.value == 1:
-                    cmdrxQueue.put(recvMsgBuff)
+                    rcvcmd = list(recvMsgBuff)
+                    rcvcmd.pop(0)
+                    time.sleep(0.001)
+                    cmdrxQueue.put(rcvcmd)
                 recvMsgBuff = list()
 
         else:
@@ -184,7 +190,10 @@ def rec_deal(recClose_event, rx_data, subPkg_timeout, cmdrxQueue, File_Process_F
                 recvLen = 0
                 rx_data.put(recvMsgBuff)
                 if File_Process_Flag.value == 1:
-                    cmdrxQueue.put(recvMsgBuff)
+                    rcvcmd = list(recvMsgBuff)
+                    rcvcmd.pop(0)
+                    time.sleep(0.001)
+                    cmdrxQueue.put(rcvcmd)
                 recvMsgBuff = list()
             else:
                 time.sleep(0.001)
@@ -547,10 +556,9 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         add_crc16_to_list(self.txbuff)
         tx_data.put(self.txbuff)
 
-    def check_uartSendSta(self):
+    def check_uartSendFileSta(self):
         send_fail = 0
         timeStr = Time_get.get_strTime()
-
         try:
             if (
                 usart_process.is_alive() == False
@@ -618,7 +626,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         for i in range(3):
             try:
                 self.Iap_Req()
-                self.check_uartSendSta()
+                self.check_uartSendFileSta()
                 # 更新软件已发送字节数
                 self.send_len += 14
                 self.send_count_update.update()
@@ -652,7 +660,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
                 for i in range(3):
                     try:
                         self.Iap_Erase()
-                        self.check_uartSendSta()
+                        self.check_uartSendFileSta()
                         # 更新软件已发送字节数
                         self.send_len += 8
                         self.send_count_update.update()
@@ -758,7 +766,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
                     for i in range(3):
                         try:
                             self.Iap_Write(self.file_data_buf)
-                            self.check_uartSendSta()
+                            self.check_uartSendFileSta()
                             # 更新软件已发送字节数
                             self.send_len += 2056
                             self.send_count_update.update()
@@ -846,7 +854,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
                 for i in range(3):
                     try:
                         self.Iap_Write(self.file_data_buf)
-                        self.check_uartSendSta()
+                        self.check_uartSendFileSta()
                         # 更新软件已发送字节数
                         self.send_len += left_data_size + 8
                         self.send_count_update.update()
@@ -923,7 +931,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
                 for i in range(3):
                     try:
                         self.Iap_Write(self.file_data_buf)
-                        self.check_uartSendSta()
+                        self.check_uartSendFileSta()
                         # 更新软件已发送字节数
                         self.send_len += left_data_size + 8
                         self.send_count_update.update()
@@ -1009,7 +1017,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
             for i in range(3):
                 try:
                     self.Iap_Done()
-                    self.check_uartSendSta()
+                    self.check_uartSendFileSta()
                     # 更新软件已发送字节数
                     self.send_len += 7
                     self.send_count_update.update()
@@ -1416,9 +1424,9 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         while not Com_Open_Flag == com_state.CLOSE:
             if rx_data.empty() == False:
                 data = rx_data.get()
-                self.recv_len += len(data)
+                self.recv_len += len(data)-1
                 self.recv_count_update.update()
-                self.Set_Display_Data(data)
+                self.Set_Display_DataRcv(data)
             else:
                 time.sleep(0.001)  # 降低cpu占用
 
@@ -1548,13 +1556,14 @@ class Mywindow(QMainWindow, Ui_MainWindow):
                     if self.SaveDataCheck.isChecked() and self.savedatafile != None:
                         self.savedatafile.write(show_str + "\n")
 
-    def Set_Display_Data(self, Data):
+    def Set_Display_DataRcv(self, Data):
+        timeStr = Data[0]
+        Data.pop(0)
         if self.recHexShow.isChecked():
             show_str = (" ".join([hex(x)[2:].zfill(2) for x in Data])).upper()
         else:
             show_str = bytes(Data).decode(encoding=self.now_enco_form, errors="replace")
 
-        timeStr = Time_get.get_strTime()
         show_str = "[" + timeStr + "]" + "收←◆" + show_str + "\n"
         self.ui_update.update(show_str)
 
