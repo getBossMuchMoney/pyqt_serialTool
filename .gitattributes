@@ -1,0 +1,8 @@
+* text=auto eol=lf
+*.c text diff=c
+*.py text diff=python
+*.js text diff=javascript
+# 其他文件类型按需添加
+
+*.encrypted -text  # 若加密文件有固定后缀
+
