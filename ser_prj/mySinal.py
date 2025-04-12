@@ -2,7 +2,7 @@ from PyQt5.QtCore import  pyqtSignal, QObject
 
 
 
-# 自定义信号量
+# 鑷畾涔変俊鍙烽噺
 class ui_show(QObject):
     update_signal = pyqtSignal(str)
 
