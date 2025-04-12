@@ -3,16 +3,9 @@ from serial import Serial
 from cushy_serial import CushySerial
 from serial.tools import list_ports
 from threading import Thread, Event
-from PyQt5.QtWidgets import (
-    QApplication,
-    QMainWindow,
-    QMessageBox,
-    QFileDialog,
-    QProgressDialog,
-    QTabWidget,
-)
+from PyQt5.QtWidgets import *
 from Ui_untitled import Ui_MainWindow
-from PyQt5.QtCore import Qt, pyqtSignal, QObject, QThread, QCoreApplication
+from PyQt5.QtCore import Qt, QThread, QCoreApplication
 import multiprocessing
 from multiprocessing import Pool, Process, Value, Array, Manager, Queue
 from enum import IntEnum
@@ -21,38 +14,9 @@ from PyQt5.QtGui import QTextCursor, QIntValidator
 from myTimer import msTimer, msTimer_Call
 import Time_get
 import ctypes
-from crc import calculate_crc32, calculate_crc16, list_to_crc16, add_crc16_to_list
-
-
-# 自定义信号量
-class ui_show(QObject):
-    update_signal = pyqtSignal(str)
-
-    def __init__(self):
-        QObject.__init__(self)
-
-    def update(self, data):
-        self.update_signal.emit(data)
-
-
-class number_check(QObject):
-    update_signal = pyqtSignal(int)
-
-    def __init__(self):
-        QObject.__init__(self)
-
-    def update(self, index):
-        self.update_signal.emit(index)
-
-
-class state_check(QObject):
-    update_signal = pyqtSignal()
-
-    def __init__(self):
-        QObject.__init__(self)
-
-    def update(self):
-        self.update_signal.emit()
+from crc import *
+from mySinal import *
+from CanUI import *
 
 
 class WorkThread(QThread):
@@ -390,6 +354,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
         comListTimer.change(self.com_reflash, 3000)
         comListTimer.start()
 
+
         # 加载串口波特率选项
         for i in range(0, len(band)):
             self.Com_Band.addItem(band[i])
@@ -604,14 +569,22 @@ class Mywindow(QMainWindow, Ui_MainWindow):
 
     def send_file_process(self):
         self.txbuff = list()
+        filebuff = list(self.openFile.read(self.file_size))
+        k = self.file_size % 16
+        if k != 0:
+            for i in range(16 - k):
+                filebuff.append(0xFF)
+                self.file_size += 1
+
         group_index = 0
+        list_index = 0
         rxbuff = list()
         File_Process_Flag.value = 1
         subPkg_timeout.value = 20
         self.index.value = 0
         self.ChosedeviceID.setEnabled(False)
         self.deviceID = self.ChosedeviceID.currentIndex() + 1
-        self.crc32 = calculate_crc32(self.file_selected.text())
+        self.crc32 = crc32_for_byte_list(filebuff)
         data_group = self.file_size // 2048
         left_data_size = self.file_size % 2048
         if data_group > 0 and left_data_size > 0:
@@ -761,8 +734,8 @@ class Mywindow(QMainWindow, Ui_MainWindow):
                     return
 
                 try:
-                    self.file_data_buf = list()
-                    self.file_data_buf = list(self.openFile.read(2048))
+                    self.file_data_buf = list(filebuff[list_index:list_index+2048])
+                    list_index+=2048
                     for i in range(3):
                         try:
                             self.Iap_Write(self.file_data_buf)
@@ -849,8 +822,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
                     self.openFile.close()
 
             if left_data_size > 0:
-                self.file_data_buf = list()
-                self.file_data_buf = list(self.openFile.read(left_data_size))
+                self.file_data_buf = list(filebuff[list_index:list_index+left_data_size])
                 for i in range(3):
                     try:
                         self.Iap_Write(self.file_data_buf)
@@ -926,8 +898,7 @@ class Mywindow(QMainWindow, Ui_MainWindow):
 
         else:
             try:
-                self.file_data_buf = list()
-                self.file_data_buf = list(self.openFile.read(left_data_size))
+                self.file_data_buf = list(filebuff[0:left_data_size])
                 for i in range(3):
                     try:
                         self.Iap_Write(self.file_data_buf)

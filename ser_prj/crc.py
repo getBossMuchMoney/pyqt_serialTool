@@ -15,6 +15,15 @@ def calculate_crc32(file_path):
     file.close()
     return crc_value & 0xFFFFFFFF
 
+def crc32_for_byte_list(byte_list):
+    # 将整数列表转换为字节串
+    byte_data = bytes(byte_list)
+    
+    # 计算CRC32校验值
+    crc32_value = zlib.crc32(byte_data)
+    
+    # 返回最终的CRC32值
+    return crc32_value
 
 def calculate_crc16(data: list):
     """
