@@ -1,9 +1,9 @@
 from PyQt5.QtWidgets import *
-from UartUI import UartWindow
+from UartDebug import UartWindow
 import multiprocessing
 from PyQt5.QtCore import Qt, QThread, QCoreApplication
 import sys, os
-from CanUI import CanWindow
+from CanDebug import CanWindow
 from Ui_untitled import Ui_MainWindow
 
 class Mywindow(QMainWindow):
