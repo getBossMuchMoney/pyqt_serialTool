@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'd:\git_projects\pyqt_serialTool\ser_prj\untitled.ui'
+# Form implementation generated from reading ui file 'e:\gitHub_prj\pyqt_serialTool\ser_prj\untitled.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.9
 #
@@ -147,7 +147,7 @@ class Ui_MainWindow(object):
         self.CHOOSE_FILE_OF_CAN.setGeometry(QtCore.QRect(880, 480, 81, 31))
         self.CHOOSE_FILE_OF_CAN.setObjectName("CHOOSE_FILE_OF_CAN")
         self.label_26 = QtWidgets.QLabel(self.tab_2)
-        self.label_26.setGeometry(QtCore.QRect(900, 110, 61, 21))
+        self.label_26.setGeometry(QtCore.QRect(900, 180, 61, 21))
         self.label_26.setObjectName("label_26")
         self.CAN_FILE_SHOWED = QtWidgets.QLineEdit(self.tab_2)
         self.CAN_FILE_SHOWED.setGeometry(QtCore.QRect(970, 480, 181, 31))
@@ -156,27 +156,33 @@ class Ui_MainWindow(object):
         self.label_27.setGeometry(QtCore.QRect(881, 420, 71, 20))
         self.label_27.setObjectName("label_27")
         self.label_28 = QtWidgets.QLabel(self.tab_2)
-        self.label_28.setGeometry(QtCore.QRect(880, 60, 72, 21))
+        self.label_28.setGeometry(QtCore.QRect(880, 130, 72, 21))
         self.label_28.setObjectName("label_28")
         self.CHOOSE_BOARD_CAN = QtWidgets.QComboBox(self.tab_2)
         self.CHOOSE_BOARD_CAN.setGeometry(QtCore.QRect(960, 420, 87, 22))
         self.CHOOSE_BOARD_CAN.setObjectName("CHOOSE_BOARD_CAN")
         self.CAN_BAND = QtWidgets.QComboBox(self.tab_2)
-        self.CAN_BAND.setGeometry(QtCore.QRect(960, 110, 111, 22))
+        self.CAN_BAND.setGeometry(QtCore.QRect(960, 180, 111, 22))
         self.CAN_BAND.setObjectName("CAN_BAND")
         self.START_CAN_IAP = QtWidgets.QPushButton(self.tab_2)
         self.START_CAN_IAP.setGeometry(QtCore.QRect(970, 540, 93, 28))
         self.START_CAN_IAP.setObjectName("START_CAN_IAP")
         self.CAN_DEVIEC_PASS = QtWidgets.QComboBox(self.tab_2)
-        self.CAN_DEVIEC_PASS.setGeometry(QtCore.QRect(960, 60, 87, 22))
+        self.CAN_DEVIEC_PASS.setGeometry(QtCore.QRect(960, 130, 87, 22))
         self.CAN_DEVIEC_PASS.setObjectName("CAN_DEVIEC_PASS")
         self.OPEN_CAN_DEVICE = QtWidgets.QPushButton(self.tab_2)
-        self.OPEN_CAN_DEVICE.setGeometry(QtCore.QRect(1100, 80, 111, 28))
+        self.OPEN_CAN_DEVICE.setGeometry(QtCore.QRect(960, 230, 111, 28))
         self.OPEN_CAN_DEVICE.setObjectName("OPEN_CAN_DEVICE")
         self.CAN_FRAME_SHOWED = QtWidgets.QTextEdit(self.tab_2)
         self.CAN_FRAME_SHOWED.setGeometry(QtCore.QRect(30, 30, 801, 641))
         self.CAN_FRAME_SHOWED.setTextInteractionFlags(QtCore.Qt.TextBrowserInteraction)
         self.CAN_FRAME_SHOWED.setObjectName("CAN_FRAME_SHOWED")
+        self.CAN_DEVICE_INDEX = QtWidgets.QComboBox(self.tab_2)
+        self.CAN_DEVICE_INDEX.setGeometry(QtCore.QRect(960, 80, 87, 22))
+        self.CAN_DEVICE_INDEX.setObjectName("CAN_DEVICE_INDEX")
+        self.label_11 = QtWidgets.QLabel(self.tab_2)
+        self.label_11.setGeometry(QtCore.QRect(860, 80, 101, 20))
+        self.label_11.setObjectName("label_11")
         self.tabWidget.addTab(self.tab_2, "")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
@@ -188,7 +194,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
 
         self.retranslateUi(MainWindow)
-        self.tabWidget.setCurrentIndex(0)
+        self.tabWidget.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -224,4 +230,5 @@ class Ui_MainWindow(object):
         self.label_28.setText(_translate("MainWindow", "设备通道:"))
         self.START_CAN_IAP.setText(_translate("MainWindow", "开始升级"))
         self.OPEN_CAN_DEVICE.setText(_translate("MainWindow", "打开CAN分析仪"))
+        self.label_11.setText(_translate("MainWindow", "CAN设备序号:"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("MainWindow", "can调试"))

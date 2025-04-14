@@ -75,7 +75,7 @@ File_Process_Flag = Value("i", 0)
 @_1000msTimer.msTimer_callback()
 def pprocess_heartbeat():
     heartbeat.put(1)
-    # print("心跳开启")
+    print("心跳开启")
 
 
 # 子进程全局变量
@@ -269,7 +269,7 @@ def bytesrialtoarray(msg):
     return data
 
 
-class UartWindow(QWidget):
+class UartWindow():
     def __init__(self,ui_main_window):
         band = ["9600", "19200", "115200", "460800", "2000000"]
         DeviceIdList = [
@@ -344,7 +344,6 @@ class UartWindow(QWidget):
         self.recSubpackageTimeOut_input = self.ui.recSubpackageTimeOut_input
         self.recHexShow = self.ui.recHexShow
         self.Com_Band = self.ui.Com_Band
-        self.Send_Data_Display = self.ui.Send_Data_Display
 
 
         self.ClearRecShow.clicked.connect(self.recv_show_clear)

@@ -3,13 +3,33 @@ from PyQt5.QtWidgets import *
 from Ui_untitled import Ui_MainWindow
 from PyQt5.QtCore import Qt, QThread, QCoreApplication
 import sys, os
+import ctypes
 from ctypes import *
 from crc import *
 from mySinal import *
 import Time_get
+from myTimer import msTimer, msTimer_Call
+import time
+
+  
 
 canDLL = windll.LoadLibrary('./ControlCAN.dll')
 VCI_USBCAN2 = 4
+
+
+class VCI_BOARD_INFO(Structure):  
+    _fields_ = [("hw_Version", c_ushort),
+                ("fw_Version", c_ushort),
+                ("dr_Version", c_ushort),
+                ("in_Version", c_ushort),
+                ("irq_Num", c_ushort),
+                ("can_Num", c_ubyte),
+                ("str_Serial_Num", c_ubyte * 20),
+                ("str_hw_Type", c_ubyte * 40),
+                ("Reserved", c_ubyte * 4),
+                ]
+
+
 
 class VCI_INIT_CONFIG(Structure):  
     _fields_ = [("AccCode", c_uint),
@@ -19,7 +39,8 @@ class VCI_INIT_CONFIG(Structure):
                 ("Timing0", c_ubyte),
                 ("Timing1", c_ubyte),
                 ("Mode", c_ubyte)
-                ]  
+                ]
+      
 class VCI_CAN_OBJ(Structure):  
     _fields_ = [("ID", c_uint),
                 ("TimeStamp", c_uint),
@@ -31,10 +52,43 @@ class VCI_CAN_OBJ(Structure):
                 ("Data", c_ubyte*8),
                 ("Reserved", c_ubyte*3)
                 ] 
+    
+
+class VCI_CAN_OBJ_ARRAY(Structure):
+    _fields_ = [('SIZE', ctypes.c_uint16), ('STRUCT_ARRAY', ctypes.POINTER(VCI_CAN_OBJ))]
+
+    def __init__(self,num_of_structs):
+                                                                 #这个括号不能少
+        self.STRUCT_ARRAY = ctypes.cast((VCI_CAN_OBJ * num_of_structs)(),ctypes.POINTER(VCI_CAN_OBJ))#结构体数组
+        self.SIZE = num_of_structs#结构体长度
+        self.ADDR = self.STRUCT_ARRAY[0]#结构体数组地址  byref()转c地址
+    
+rx_vci_can_obj = VCI_CAN_OBJ_ARRAY(2500)#结构体数组    
 
 
-class CanWindow(QMainWindow):
+class CanWindow():
     def __init__(self,ui_main_window):
+        self.CanDeviceInde = 0
+        self.devicePass_index = 0
+        self.CanDeviceNum = 0
+        self.DeviceIdList = list()
+        self.DeviceOpenSta = 0
+        DevicePass = ["CAN1", "CAN2"]
+        self.DeviceTimming = [[0x03,0x1C],[0x01,0x1C],[0x00,0x1C],[0x00,0x14]]
+        Band = ["125kbit", "250kbit", "500kbit", "1Mbit"]
+        DeviceIdList = [
+            "主机",
+            "从机1",
+            "从机2",
+            "从机3",
+            "从机4",
+            "从机5",
+            "从机6",
+            "从机7",
+            "从机8",
+            "从机9",
+            "从机10",
+        ]
         super().__init__()
         self.ui = ui_main_window
         self.OPEN_CAN_DEVICE = self.ui.OPEN_CAN_DEVICE
@@ -45,11 +99,164 @@ class CanWindow(QMainWindow):
         self.START_CAN_IAP = self.ui.START_CAN_IAP
         self.CAN_DEVIEC_PASS = self.ui.CAN_DEVIEC_PASS
         self.CAN_FRAME_SHOWED = self.ui.CAN_FRAME_SHOWED
-        self.OPEN_CAN_DEVICE.clicked.connect(self.open_device)
+        self.CAN_DEVICE_INDEX = self.ui.CAN_DEVICE_INDEX
+
+        self.OPEN_CAN_DEVICE.clicked.connect(self.Open_Devive_Click)
+
+        self.ui_update = ui_show()
+        self.ui_update.update_signal.connect(self.ui_show_refresh)
+
+        self.CanCtrlThread = Thread(target=self.ctrl_CanDevice)
+        self.rcvDataThread = Thread(target=self.rcv_Data)
+        self.CheckCanDeviceThread = Thread(target=self.CheckCanDevice)
+        self.CheckCanDeviceThread.start()
+
+        # 加载通道选项
+        for i in range(0, len(DevicePass)):
+            self.CAN_DEVIEC_PASS.addItem(DevicePass[i])
+
+        # 加载波特率选项
+        for i in range(0, len(Band)):
+            self.CAN_BAND.addItem(Band[i])
+
+        # 加载选择设备选项
+        for i in range(0, len(DeviceIdList)):
+            self.CHOOSE_BOARD_CAN.addItem(DeviceIdList[i])
+
+    def CheckCanDevice(self):
+        while True:
+            VCI_BOARD_INFO_ARRAY = ARRAY(VCI_BOARD_INFO, 5)
+            DeviceInfoArray = VCI_BOARD_INFO_ARRAY()
+            DeviceInfoPtr = POINTER(VCI_BOARD_INFO_ARRAY)(DeviceInfoArray)  # 获取数组指针
+            time.sleep(0.1)
+
+            for i in range(3):             
+                Num = canDLL.VCI_FindUsbDevice2(DeviceInfoPtr)
+                if Num != 0:
+                    break; 
+                time.sleep(0.1)
+                            
+            if self.CanDeviceNum !=  Num:
+                self.CanDeviceNum = Num
+                self.CAN_DEVICE_INDEX.clear()                  
+                for i in range(Num):
+                    self.CAN_DEVICE_INDEX.addItem(str(i))    
+            time.sleep(3)
+
+    def rcv_Data(self):
+        global rx_vci_can_obj
+        while True:
+            if self.DeviceOpenSta == 0:
+                break
+            else:
+                ret = canDLL.VCI_Receive(VCI_USBCAN2, self.CanDeviceInde, self.devicePass_index, byref(rx_vci_can_obj.ADDR), 2500, 0)
+                if ret > 0:#接收到数据
+                    for i in range(0,ret):
+                        print('CAN通道接收成功',end=" ")
+                        print('ID：',end="")
+                        print(hex(rx_vci_can_obj.STRUCT_ARRAY[i].ID),end=" ")
+                        print('DataLen：',end="")
+                        print(hex(rx_vci_can_obj.STRUCT_ARRAY[i].DataLen),end=" ")
+                        print('Data：',end="")
+                        print(list(rx_vci_can_obj.STRUCT_ARRAY[i].Data),end=" ")
+                        print('\r')
+            time.sleep(0.001)
+        
 
 
-    def open_device(self):
+    def ui_show_refresh (self, data):
+        self.CAN_FRAME_SHOWED.append(data)
+
+    def Open_Devive_Click(self):
+        if not self.CanCtrlThread.is_alive():
+            self.OPEN_CAN_DEVICE.setEnabled(False)
+            self.CanCtrlThread = Thread(target=self.ctrl_CanDevice)
+            self.CanCtrlThread.start()
+
+    def ctrl_CanDevice(self):
         global VCI_USBCAN2
-        ret = canDLL.VCI_OpenDevice(VCI_USBCAN2, 0, 0)
-        print("open_device")
+        if self.OPEN_CAN_DEVICE.text() == "打开CAN分析仪" and self.CAN_DEVICE_INDEX.count() > 0:
+            self.CanDeviceIndex = self.CAN_DEVICE_INDEX.currentIndex()
+            for i in range(3):
+                ret = canDLL.VCI_UsbDeviceReset(VCI_USBCAN2, self.CanDeviceIndex,0)
+                if ret == 1:
+                    break
+                time.sleep(0.1)
+
+            for i in range(3):
+                ret = canDLL.VCI_OpenDevice(VCI_USBCAN2, self.CanDeviceIndex, 0)
+                if ret == 1:
+                    break
+                time.sleep(0.1)
+
+            if ret == 0:
+                print("打开分析仪错误")
+                for i in range(3):
+                    ret = canDLL.VCI_CloseDevice(VCI_USBCAN2, self.CanDeviceIndex)
+                    if ret == 1:
+                        break
+                    time.sleep(0.1)
+            elif ret == 1:
+                band_index = self.CAN_BAND.currentIndex()
+                band_timming =  self.DeviceTimming[band_index]
+                vci_initconfig = VCI_INIT_CONFIG(0x80000008, 0xFFFFFFFF, 0, 3, band_timming[0], band_timming[1], 0)#正常模式,只接收扩展帧
+                self.devicePass_index = self.CAN_DEVIEC_PASS.currentIndex()
+                for i in range(3):
+                    ret = canDLL.VCI_InitCAN(VCI_USBCAN2, self.CanDeviceIndex, self.devicePass_index, ctypes.byref(vci_initconfig))
+                    if ret == 1:
+                        break
+                    time.sleep(0.1)
+                if ret == 0:
+                    print("分析仪初始化错误")
+                    for i in range(3):
+                        ret = canDLL.VCI_CloseDevice(VCI_USBCAN2, self.CanDeviceIndex)
+                        if ret == 1:
+                            break
+                        time.sleep(0.1)
+                elif ret == 1:
+                    for i in range(3):
+                        ret = canDLL.VCI_StartCAN(VCI_USBCAN2, self.CanDeviceIndex, self.devicePass_index)
+                        if ret == 1:
+                            break
+                        time.sleep(0.1)
+                    if ret == 0:
+                        print("启动CAN通道失败")
+                        for i in range(3):
+                            ret = canDLL.VCI_CloseDevice(VCI_USBCAN2, self.CanDeviceIndex)
+                            if ret == 1:
+                                break
+                            time.sleep(0.1)
+                    elif ret == 1:
+                        print("CAN分析仪初始化成功")
+                        self.OPEN_CAN_DEVICE.setText("关闭CAN分析仪")
+                        self.rcvDataThread = Thread(target=self.rcv_Data)
+                        self.rcvDataThread.start()
+                        self.DeviceOpenSta = 1
+                    else:
+                        print("CAN分析仪掉线")
+
+                else:
+                    print("CAN分析仪掉线")
+           
+            else:
+                print("CAN分析仪掉线")
+
+        else:
+            self.DeviceOpenSta = 0
+            if self.rcvDataThread.is_alive():
+                self.rcvDataThread.join()
+
+            if self.CAN_DEVICE_INDEX.count() > 0:              
+                self.CanDeviceIndex = self.CAN_DEVICE_INDEX.currentIndex()
+                for i in range(3):
+                    ret = canDLL.VCI_CloseDevice(VCI_USBCAN2, self.CanDeviceIndex)
+                    if ret == 1:
+                        break
+                    time.sleep(0.1)
+            else:
+                print("CAN设备未连接")
+            self.OPEN_CAN_DEVICE.setText("打开CAN分析仪")
+            print("关闭CAN分析仪")
+
+        self.OPEN_CAN_DEVICE.setEnabled(True)
       
