@@ -12,7 +12,7 @@ from myTimer import msTimer, msTimer_Call
 import time
 
   
-
+CheckUsbDeviceTimer = msTimer(None, 0)
 canDLL = windll.LoadLibrary('./ControlCAN.dll')
 VCI_USBCAN2 = 4
 
@@ -64,9 +64,13 @@ class VCI_CAN_OBJ_ARRAY(Structure):
         self.ADDR = self.STRUCT_ARRAY[0]#结构体数组地址  byref()转c地址
     
 rx_vci_can_obj = VCI_CAN_OBJ_ARRAY(2500)#结构体数组    
+rxlen = 0
+
+VCI_BOARD_INFO_ARRAY = VCI_BOARD_INFO * 50
+DeviceInfoArray = VCI_BOARD_INFO_ARRAY()
 
 
-class CanWindow():
+class CanWindow(QWidget):
     def __init__(self,ui_main_window):
         self.CanDeviceInde = 0
         self.devicePass_index = 0
@@ -108,8 +112,12 @@ class CanWindow():
 
         self.CanCtrlThread = Thread(target=self.ctrl_CanDevice)
         self.rcvDataThread = Thread(target=self.rcv_Data)
-        self.CheckCanDeviceThread = Thread(target=self.CheckCanDevice)
-        self.CheckCanDeviceThread.start()
+
+        self.CheckCanDevice()
+        CheckUsbDeviceTimer.change(self.CheckCanDevice, 3000)
+        CheckUsbDeviceTimer.start()
+
+
 
         # 加载通道选项
         for i in range(0, len(DevicePass)):
@@ -124,42 +132,32 @@ class CanWindow():
             self.CHOOSE_BOARD_CAN.addItem(DeviceIdList[i])
 
     def CheckCanDevice(self):
-        while True:
-            VCI_BOARD_INFO_ARRAY = ARRAY(VCI_BOARD_INFO, 5)
-            DeviceInfoArray = VCI_BOARD_INFO_ARRAY()
-            DeviceInfoPtr = POINTER(VCI_BOARD_INFO_ARRAY)(DeviceInfoArray)  # 获取数组指针
-            time.sleep(0.1)
-
-            for i in range(3):             
-                Num = canDLL.VCI_FindUsbDevice2(DeviceInfoPtr)
-                if Num != 0:
-                    break; 
-                time.sleep(0.1)
-                            
-            if self.CanDeviceNum !=  Num:
-                self.CanDeviceNum = Num
-                self.CAN_DEVICE_INDEX.clear()                  
-                for i in range(Num):
-                    self.CAN_DEVICE_INDEX.addItem(str(i))    
-            time.sleep(3)
+        global DeviceInfoArray          
+        Num = canDLL.VCI_FindUsbDevice2(ctypes.pointer(DeviceInfoArray))                     
+        if self.CanDeviceNum !=  Num:
+            self.CanDeviceNum = Num
+            self.CAN_DEVICE_INDEX.clear()                  
+            for i in range(Num):
+                self.CAN_DEVICE_INDEX.addItem(str(i))    
+    
 
     def rcv_Data(self):
-        global rx_vci_can_obj
+        global rx_vci_can_obj,rxlen
         while True:
             if self.DeviceOpenSta == 0:
                 break
             else:
                 ret = canDLL.VCI_Receive(VCI_USBCAN2, self.CanDeviceInde, self.devicePass_index, byref(rx_vci_can_obj.ADDR), 2500, 0)
                 if ret > 0:#接收到数据
+                    timeStr = Time_get.get_strTime()
                     for i in range(0,ret):
-                        print('CAN通道接收成功',end=" ")
-                        print('ID：',end="")
-                        print(hex(rx_vci_can_obj.STRUCT_ARRAY[i].ID),end=" ")
-                        print('DataLen：',end="")
-                        print(hex(rx_vci_can_obj.STRUCT_ARRAY[i].DataLen),end=" ")
-                        print('Data：',end="")
-                        print(list(rx_vci_can_obj.STRUCT_ARRAY[i].Data),end=" ")
-                        print('\r')
+                        idstr = " id:"+str(hex(rx_vci_can_obj.STRUCT_ARRAY[i].ID)) + " "
+                        lenstr = "len:" + str(hex(rx_vci_can_obj.STRUCT_ARRAY[i].DataLen)) + " data:"
+                        datastr = ' '.join(f'{byte:02X}' for byte in rx_vci_can_obj.STRUCT_ARRAY[i].Data)
+                        show_str = "[" + timeStr + "]" + "收←◆" + idstr + lenstr + datastr
+                        self.ui_update.update(show_str)
+                # rxlen += ret
+                # print('CAN通道接收数据总数：' + str(rxlen))
             time.sleep(0.001)
         
 
@@ -176,56 +174,29 @@ class CanWindow():
     def ctrl_CanDevice(self):
         global VCI_USBCAN2
         if self.OPEN_CAN_DEVICE.text() == "打开CAN分析仪" and self.CAN_DEVICE_INDEX.count() > 0:
-            self.CanDeviceIndex = self.CAN_DEVICE_INDEX.currentIndex()
-            for i in range(3):
-                ret = canDLL.VCI_UsbDeviceReset(VCI_USBCAN2, self.CanDeviceIndex,0)
-                if ret == 1:
-                    break
-                time.sleep(0.1)
-
-            for i in range(3):
-                ret = canDLL.VCI_OpenDevice(VCI_USBCAN2, self.CanDeviceIndex, 0)
-                if ret == 1:
-                    break
-                time.sleep(0.1)
+            CheckUsbDeviceTimer.pause()
+            time.sleep(0.001)
+            self.CanDeviceIndex = self.CAN_DEVICE_INDEX.currentIndex()        
+            ret = canDLL.VCI_UsbDeviceReset(VCI_USBCAN2, self.CanDeviceIndex,0)       
+            ret = canDLL.VCI_OpenDevice(VCI_USBCAN2, self.CanDeviceIndex, 0)
 
             if ret == 0:
                 print("打开分析仪错误")
-                for i in range(3):
-                    ret = canDLL.VCI_CloseDevice(VCI_USBCAN2, self.CanDeviceIndex)
-                    if ret == 1:
-                        break
-                    time.sleep(0.1)
+                ret = canDLL.VCI_CloseDevice(VCI_USBCAN2, self.CanDeviceIndex)
             elif ret == 1:
                 band_index = self.CAN_BAND.currentIndex()
                 band_timming =  self.DeviceTimming[band_index]
                 vci_initconfig = VCI_INIT_CONFIG(0x80000008, 0xFFFFFFFF, 0, 3, band_timming[0], band_timming[1], 0)#正常模式,只接收扩展帧
                 self.devicePass_index = self.CAN_DEVIEC_PASS.currentIndex()
-                for i in range(3):
-                    ret = canDLL.VCI_InitCAN(VCI_USBCAN2, self.CanDeviceIndex, self.devicePass_index, ctypes.byref(vci_initconfig))
-                    if ret == 1:
-                        break
-                    time.sleep(0.1)
+                ret = canDLL.VCI_InitCAN(VCI_USBCAN2, self.CanDeviceIndex, self.devicePass_index, ctypes.byref(vci_initconfig))
                 if ret == 0:
                     print("分析仪初始化错误")
-                    for i in range(3):
-                        ret = canDLL.VCI_CloseDevice(VCI_USBCAN2, self.CanDeviceIndex)
-                        if ret == 1:
-                            break
-                        time.sleep(0.1)
+                    ret = canDLL.VCI_CloseDevice(VCI_USBCAN2, self.CanDeviceIndex)
                 elif ret == 1:
-                    for i in range(3):
-                        ret = canDLL.VCI_StartCAN(VCI_USBCAN2, self.CanDeviceIndex, self.devicePass_index)
-                        if ret == 1:
-                            break
-                        time.sleep(0.1)
+                    ret = canDLL.VCI_StartCAN(VCI_USBCAN2, self.CanDeviceIndex, self.devicePass_index)
                     if ret == 0:
                         print("启动CAN通道失败")
-                        for i in range(3):
-                            ret = canDLL.VCI_CloseDevice(VCI_USBCAN2, self.CanDeviceIndex)
-                            if ret == 1:
-                                break
-                            time.sleep(0.1)
+                        ret = canDLL.VCI_CloseDevice(VCI_USBCAN2, self.CanDeviceIndex)
                     elif ret == 1:
                         print("CAN分析仪初始化成功")
                         self.OPEN_CAN_DEVICE.setText("关闭CAN分析仪")
@@ -245,18 +216,13 @@ class CanWindow():
             self.DeviceOpenSta = 0
             if self.rcvDataThread.is_alive():
                 self.rcvDataThread.join()
-
-            if self.CAN_DEVICE_INDEX.count() > 0:              
-                self.CanDeviceIndex = self.CAN_DEVICE_INDEX.currentIndex()
-                for i in range(3):
-                    ret = canDLL.VCI_CloseDevice(VCI_USBCAN2, self.CanDeviceIndex)
-                    if ret == 1:
-                        break
-                    time.sleep(0.1)
-            else:
-                print("CAN设备未连接")
+             
+            self.CanDeviceIndex = self.CAN_DEVICE_INDEX.currentIndex()
+            ret = canDLL.VCI_CloseDevice(VCI_USBCAN2, self.CanDeviceIndex)
+            CheckUsbDeviceTimer.start()
             self.OPEN_CAN_DEVICE.setText("打开CAN分析仪")
             print("关闭CAN分析仪")
 
         self.OPEN_CAN_DEVICE.setEnabled(True)
+        
       

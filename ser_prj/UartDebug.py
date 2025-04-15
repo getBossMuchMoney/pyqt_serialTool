@@ -269,7 +269,7 @@ def bytesrialtoarray(msg):
     return data
 
 
-class UartWindow():
+class UartWindow(QWidget):
     def __init__(self,ui_main_window):
         band = ["9600", "19200", "115200", "460800", "2000000"]
         DeviceIdList = [
@@ -344,7 +344,7 @@ class UartWindow():
         self.recSubpackageTimeOut_input = self.ui.recSubpackageTimeOut_input
         self.recHexShow = self.ui.recHexShow
         self.Com_Band = self.ui.Com_Band
-
+        self.Send_Data_Display = self.ui.Send_Data_Display
 
         self.ClearRecShow.clicked.connect(self.recv_show_clear)
         self.ClearSendShow.clicked.connect(self.send_show_clear)
