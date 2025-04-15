@@ -12,7 +12,6 @@ from myTimer import msTimer, msTimer_Call
 import time
 
   
-CheckUsbDeviceTimer = msTimer(None, 0)
 canDLL = windll.LoadLibrary('./ControlCAN.dll')
 VCI_USBCAN2 = 4
 
@@ -104,8 +103,10 @@ class CanWindow(QWidget):
         self.CAN_DEVIEC_PASS = self.ui.CAN_DEVIEC_PASS
         self.CAN_FRAME_SHOWED = self.ui.CAN_FRAME_SHOWED
         self.CAN_DEVICE_INDEX = self.ui.CAN_DEVICE_INDEX
+        self.SCAN_USBDEVICE = self.ui.SCAN_USBDEVICE
 
         self.OPEN_CAN_DEVICE.clicked.connect(self.Open_Devive_Click)
+        self.SCAN_USBDEVICE.clicked.connect(self.CheckCanDevice)
 
         self.ui_update = ui_show()
         self.ui_update.update_signal.connect(self.ui_show_refresh)
@@ -114,9 +115,6 @@ class CanWindow(QWidget):
         self.rcvDataThread = Thread(target=self.rcv_Data)
 
         self.CheckCanDevice()
-        CheckUsbDeviceTimer.change(self.CheckCanDevice, 3000)
-        CheckUsbDeviceTimer.start()
-
 
 
         # 加载通道选项
@@ -133,7 +131,7 @@ class CanWindow(QWidget):
 
     def CheckCanDevice(self):
         global DeviceInfoArray          
-        Num = canDLL.VCI_FindUsbDevice2(ctypes.pointer(DeviceInfoArray))                     
+        Num = canDLL.VCI_FindUsbDevice2(byref(DeviceInfoArray))                     
         if self.CanDeviceNum !=  Num:
             self.CanDeviceNum = Num
             self.CAN_DEVICE_INDEX.clear()                  
@@ -174,8 +172,6 @@ class CanWindow(QWidget):
     def ctrl_CanDevice(self):
         global VCI_USBCAN2
         if self.OPEN_CAN_DEVICE.text() == "打开CAN分析仪" and self.CAN_DEVICE_INDEX.count() > 0:
-            CheckUsbDeviceTimer.pause()
-            time.sleep(0.001)
             self.CanDeviceIndex = self.CAN_DEVICE_INDEX.currentIndex()        
             ret = canDLL.VCI_UsbDeviceReset(VCI_USBCAN2, self.CanDeviceIndex,0)       
             ret = canDLL.VCI_OpenDevice(VCI_USBCAN2, self.CanDeviceIndex, 0)
@@ -219,7 +215,6 @@ class CanWindow(QWidget):
              
             self.CanDeviceIndex = self.CAN_DEVICE_INDEX.currentIndex()
             ret = canDLL.VCI_CloseDevice(VCI_USBCAN2, self.CanDeviceIndex)
-            CheckUsbDeviceTimer.start()
             self.OPEN_CAN_DEVICE.setText("打开CAN分析仪")
             print("关闭CAN分析仪")
 
