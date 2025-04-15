@@ -658,6 +658,32 @@
        <string>扫描设备</string>
       </property>
      </widget>
+     <widget class="QPushButton" name="BOOT_CMD">
+      <property name="geometry">
+       <rect>
+        <x>960</x>
+        <y>350</y>
+        <width>93</width>
+        <height>28</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>boot</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_12">
+      <property name="geometry">
+       <rect>
+        <x>870</x>
+        <y>360</y>
+        <width>72</width>
+        <height>15</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>boot命令:</string>
+      </property>
+     </widget>
     </widget>
    </widget>
   </widget>
