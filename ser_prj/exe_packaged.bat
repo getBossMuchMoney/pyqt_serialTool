@@ -1,1 +1,1 @@
-pyinstaller -w main.py
+pyinstaller --add-binary "./ControlCAN.dll;." -w main.py

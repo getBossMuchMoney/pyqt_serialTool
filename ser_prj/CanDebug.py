@@ -9,9 +9,27 @@ from crc import *
 from mySinal import *
 import Time_get
 import time
+from multiprocessing import*
+from enum import IntEnum
 
 canDLL = windll.LoadLibrary('./ControlCAN.dll') 
 VCI_USBCAN2 = 4
+iapRXdata = Queue()
+
+class can_err_code(IntEnum):
+    DATA_LEN_OVERRANGE_ERR = 5
+    FILE_NOT_EXIST_ERR = 6
+    FILE_SIZE_OVERRANGE = 7
+    FILE_READ_ERR = 8
+    FILE_SEND_ERR = 9
+    NO_DEVICE_FOUND_ERR = 10
+    DEVICE_RESPOND_TIMEOUT_ERR = 11
+    DEVICE_FLASH_ERASE_ERR = 12
+    DEVICE_FLASH_WRITE_ERR = 13
+    DEVICE_FLASH_CHECK_ERR = 14
+    DEVICE_FLASH_CHECK_SUCCESS = 15
+    DEVICE_NOT_CORRECT_RESPOND_ERR = 16
+
 
 
 class ID_BIT(Structure):
@@ -101,6 +119,12 @@ class CanWindow(QWidget):
         self.CanDeviceNum = 0
         self.DeviceIdList = list()
         self.DeviceOpenSta = 0
+        self.deviceID = 0
+        self.errCode = 0
+        self.index = ctypes.c_uint8(0)
+        self.crc32 = 0
+        self.sendProcessCount = 0
+        self.file_size = 0
         DevicePass = ["CAN1", "CAN2"]
         self.DeviceTimming = [[0x03,0x1C],[0x01,0x1C],[0x00,0x1C],[0x00,0x14]]
         Band = ["125kbit", "250kbit", "500kbit", "1Mbit"]
@@ -134,12 +158,26 @@ class CanWindow(QWidget):
         self.OPEN_CAN_DEVICE.clicked.connect(self.Open_Devive_Click)
         self.SCAN_USBDEVICE.clicked.connect(self.CheckCanDevice)
         self.BOOT_CMD.clicked.connect(self.bootSend)
+        self.CHOOSE_FILE_OF_CAN.clicked.connect(self.open_file)
+        self.START_CAN_IAP.clicked.connect(self.send_file)
 
         self.ui_update = ui_show()
         self.ui_update.update_signal.connect(self.ui_show_refresh)
 
         self.CanCtrlThread = Thread(target=self.ctrl_CanDevice)
         self.rcvDataThread = Thread(target=self.rcv_Data)
+        self.Updatathread = Thread(target=self.Updateprocess)
+
+        self.canErr = number_check()
+        self.canErr.update_signal.connect(self.err_code_warning)
+
+        self.send_process_show_start = number_check()
+        self.send_process_show_start.update_signal.connect(self.send_process_window)
+
+        self.send_process_count_update = number_check()
+        self.send_process_count_update.update_signal.connect(
+            self.send_process_count_reflash
+        )
 
         self.CheckCanDevice()
 
@@ -155,6 +193,302 @@ class CanWindow(QWidget):
         # 加载选择设备选项
         for i in range(0, len(DeviceIdList)):
             self.CHOOSE_BOARD_CAN.addItem(DeviceIdList[i])
+
+    
+    def open_file(self):
+        if not self.Updatathread.is_alive():
+            self.fname = QFileDialog.getOpenFileName(
+                self, "打开文件", "/",filter='*.bin'
+            )  # filter='*.txt',此参数指定文件类型
+
+            if self.fname[0]:
+                self.file_size = os.path.getsize(self.fname[0])
+                print("文件大小", self.file_size)
+                if self.file_size > 1024 * 1024 * 1024 or self.file_size < 2048:
+                    self.errCode = can_err_code.FILE_SIZE_OVERRANGE
+                    self.canErr.update(self.errCode)
+                    return
+                try:
+                    self.openFile = open(self.fname[0], "rb")
+                    self.CAN_FILE_SHOWED.clear()
+                    self.CAN_FILE_SHOWED.setText(self.fname[0])
+                except:
+                    return
+            else:
+                self.file_size = 0  
+
+    def send_file(self):
+        if not self.Updatathread.is_alive():
+            self.deviceID = self.CHOOSE_BOARD_CAN.currentIndex() + 1
+            if self.file_size > 0:
+                print(self.CAN_FILE_SHOWED.text())
+                if self.CAN_FILE_SHOWED.text() == self.fname[0]:
+                    self.Updatathread = Thread(target=self.Updateprocess)
+                    self.Updatathread.start()
+                    self.START_CAN_IAP.setEnabled(False)
+
+                else:
+                    try:
+                        self.openFile = open(self.CAN_FILE_SHOWED.text(), "rb")
+                        self.file_size = os.path.getsize(self.CAN_FILE_SHOWED.text())
+                        self.Updatathread = Thread(target=self.Updateprocess)
+                        self.Updatathread.start()
+                        self.START_CAN_IAP.setEnabled(False)
+
+                    except:
+                        self.errCode = can_err_code.FILE_NOT_EXIST_ERR
+                        self.canErr.update(self.errCode)
+
+            else:
+                try:
+                    self.openFile = open(self.CAN_FILE_SHOWED.text(), "rb")
+                    self.file_size = os.path.getsize(self.CAN_FILE_SHOWED.text())
+                    self.Updatathread = Thread(target=self.Updateprocess)
+                    self.Updatathread.start()
+                    self.START_CAN_IAP.setEnabled(False)
+
+                except:
+                    self.errCode = can_err_code.FILE_NOT_EXIST_ERR
+                    self.canErr.update(self.errCode)
+
+
+    def Updateprocess(self):    
+        self.txbuff = list()
+        filebuff = list(self.openFile.read(self.file_size))
+        k = self.file_size % 16
+        if k != 0:
+            for i in range(16 - k):
+                filebuff.append(0xFF)
+                self.file_size += 1
+        rxid = ID_VALUE()
+        group_index = 0
+        list_index = 0
+        list_index1 = 0
+        self.index.value = 0
+        rxbuff = list()
+        self.crc32 = crc32_for_byte_list(filebuff)
+        data_group = self.file_size // 2048
+        left_data_size = self.file_size % 2048
+
+        if left_data_size > 0:
+            self.sendProcessCount = data_group + 1
+        else:
+            self.sendProcessCount = data_group
+
+        print(self.crc32, data_group, left_data_size)
+        self.send_process_show_start.update(1)
+
+        for i in range(3):
+            try:
+                self.bootSend()
+                rxbuff = list(iapRXdata.get(timeout=1))
+                break
+            except:
+                if i == 2:
+                    self.errCode = can_err_code.NO_DEVICE_FOUND_ERR
+                    self.canErr.update(self.errCode)
+                    self.START_CAN_IAP.setEnabled(True)
+                    self.send_process_show_start.update(0)
+                    self.openFile.close()
+                    return
+                else:
+                    continue
+
+        for i in range(3):
+            try:
+                self.Iap_Req()
+                rxbuff = list(iapRXdata.get(timeout=1))
+                break
+            except:
+                if i == 2:
+                    self.file_size = 0
+                    self.errCode = can_err_code.NO_DEVICE_FOUND_ERR
+                    self.canErr.update(self.errCode)
+                    self.START_CAN_IAP.setEnabled(True)
+                    self.send_process_show_start.update(0)
+                    self.openFile.close()
+                    return
+                else:
+                    continue
+        self.file_size = 0
+        rxid.id_frame = int(rxbuff[0])
+        if rxid.bit.state_code == 0:
+            for i in range(3):
+                try:
+                    self.Iap_Erase()
+                    rxbuff = list(iapRXdata.get(timeout=1))
+                    break
+                except:
+                    if i == 2:
+                        self.errCode = can_err_code.NO_DEVICE_FOUND_ERR
+                        self.canErr.update(self.errCode)
+                        self.START_CAN_IAP.setEnabled(True)
+                        self.send_process_show_start.update(0)
+                        self.openFile.close()
+                        return
+                    else:
+                        continue
+        else:
+            self.errCode = can_err_code.DEVICE_NOT_CORRECT_RESPOND_ERR
+            self.canErr.update(self.errCode)
+            self.START_CAN_IAP.setEnabled(True)
+            self.send_process_show_start.update(0)
+            self.openFile.close()
+            return
+        
+
+        rxid.id_frame = int(rxbuff[0])
+        if rxid.bit.state_code == 0:
+            for group_index in range(data_group):
+                file_data_buf = list(filebuff[list_index:list_index+2048])
+                list_index+=2048
+                list_index1 = 0
+                self.index.value = 0
+                for j in range(256):
+                    txdata = list(file_data_buf[list_index1:list_index1+8])
+                    list_index1+=8
+                    for k in range(3):
+                        try:
+                            self.Iap_SendData(txdata)
+                            rxbuff = list(iapRXdata.get(timeout=1))
+                            break
+                        except:
+                            if k == 2:
+                                self.errCode = can_err_code.NO_DEVICE_FOUND_ERR
+                                self.canErr.update(self.errCode)
+                                self.START_CAN_IAP.setEnabled(True)
+                                self.send_process_show_start.update(0)
+                                self.openFile.close()
+                                return
+                            else:
+                                continue
+                    rxid.id_frame = int(rxbuff[0])
+                    if rxid.bit.state_code != 0:
+                        self.errCode = can_err_code.DEVICE_NOT_CORRECT_RESPOND_ERR
+                        self.canErr.update(self.errCode)
+                        self.START_CAN_IAP.setEnabled(True)
+                        self.send_process_show_start.update(0)
+                        self.openFile.close()
+                        return
+                    self.index.value += 1
+                crc16 = calculate_crc16(file_data_buf)
+                for k in range(3):
+                    try:
+                        self.Iap_Download(crc16)
+                        rxbuff = list(iapRXdata.get(timeout=1))
+                        break
+                    except:
+                        if k == 2:
+                            self.errCode = can_err_code.NO_DEVICE_FOUND_ERR
+                            self.canErr.update(self.errCode)
+                            self.START_CAN_IAP.setEnabled(True)
+                            self.send_process_show_start.update(0)
+                            self.openFile.close()
+                            return
+                        else:
+                            continue
+                rxid.id_frame = int(rxbuff[0])
+                if rxid.bit.state_code != 0:
+                    self.errCode = can_err_code.DEVICE_NOT_CORRECT_RESPOND_ERR
+                    self.canErr.update(self.errCode)
+                    self.START_CAN_IAP.setEnabled(True)
+                    self.send_process_show_start.update(0)
+                    self.openFile.close()
+                    return
+                
+                self.send_process_count_update.update(group_index + 1)
+
+            if left_data_size > 0:
+                file_data_buf = list(filebuff[list_index:list_index+left_data_size])
+                list_index1 = 0
+                self.index.value = 0
+                for i in range(left_data_size // 8):
+                    txdata = list(file_data_buf[list_index1:list_index1+8])
+                    list_index1+=8
+                    for k in range(3):
+                        try:
+                            self.Iap_SendData(txdata)
+                            rxbuff = list(iapRXdata.get(timeout=1))
+                            break
+                        except:
+                            if k == 2:
+                                self.errCode = can_err_code.NO_DEVICE_FOUND_ERR
+                                self.canErr.update(self.errCode)
+                                self.START_CAN_IAP.setEnabled(True)
+                                self.send_process_show_start.update(0)
+                                self.openFile.close()
+                                return
+                            else:
+                                continue
+                    rxid.id_frame = int(rxbuff[0])
+                    if rxid.bit.state_code != 0:
+                        self.errCode = can_err_code.DEVICE_NOT_CORRECT_RESPOND_ERR
+                        self.canErr.update(self.errCode)
+                        self.START_CAN_IAP.setEnabled(True)
+                        self.openFile.close()
+                        return
+                    self.index.value+=1
+                crc16 = calculate_crc16(file_data_buf)
+                for k in range(3):
+                    try:
+                        self.Iap_Download(crc16)
+                        rxbuff = list(iapRXdata.get(timeout=1))
+                        break
+                    except:
+                        if k == 2:
+                            self.errCode = can_err_code.NO_DEVICE_FOUND_ERR
+                            self.canErr.update(self.errCode)
+                            self.START_CAN_IAP.setEnabled(True)
+                            self.send_process_show_start.update(0)
+                            self.openFile.close()
+                            return
+                        else:
+                            continue
+                rxid.id_frame = int(rxbuff[0])
+                if rxid.bit.state_code != 0:
+                    self.errCode = can_err_code.DEVICE_NOT_CORRECT_RESPOND_ERR
+                    self.canErr.update(self.errCode)
+                    self.START_CAN_IAP.setEnabled(True)
+                    self.send_process_show_start.update(0)
+                    self.openFile.close()
+                    return
+                self.send_process_count_update.update(data_group + 1)
+                self.openFile.close()
+            else:
+                self.openFile.close()
+
+            for i in range(3):
+                try:
+                    self.Iap_Done()
+                    rxbuff = list(iapRXdata.get(timeout=1))
+                    break
+                except:
+                    if i == 2:
+                        self.errCode = can_err_code.NO_DEVICE_FOUND_ERR
+                        self.canErr.update(self.errCode)
+                        self.START_CAN_IAP.setEnabled(True)
+                        self.send_process_show_start.update(0)
+                        return
+                    else:
+                        continue
+
+            rxid.id_frame = int(rxbuff[0])
+            if rxid.bit.state_code != 0:
+                self.errCode = can_err_code.DEVICE_FLASH_CHECK_ERR
+                self.canErr.update(self.errCode)
+                self.START_CAN_IAP.setEnabled(True)
+                return
+            self.errCode = can_err_code.DEVICE_FLASH_CHECK_SUCCESS
+            self.canErr.update(self.errCode)
+        else:
+            self.errCode = can_err_code.DEVICE_NOT_CORRECT_RESPOND_ERR
+            self.canErr.update(self.errCode)
+            self.START_CAN_IAP.setEnabled(True)
+            return
+
+        self.START_CAN_IAP.setEnabled(True)
+
+
 
     def CheckCanDevice(self):
         global DeviceInfoArray          
@@ -184,7 +518,8 @@ class CanWindow(QWidget):
             print('CAN发送成功\r\n')
         if ret != 1:
             print('CAN发送失败\r\n')
-
+        return ret
+    
     def bootSend(self):
         id = ID_VALUE()
         data = [0] * 8
@@ -195,29 +530,92 @@ class CanWindow(QWidget):
         id.bit.index = 0
         self.Can_Transmit(id.id_frame, data)
 
+    def Iap_Req(self):
+        id = ID_VALUE()
+        data = [0] * 8
+        data[0] = self.file_size & 0xFF
+        data[1] = (self.file_size >> 8) & 0xFF
+        data[2] = (self.file_size >> 16) & 0xFF
+        data[3] = self.file_size >> 24
+        data[4] = self.crc32 & 0xFF
+        data[5] = (self.crc32 >> 8) & 0xFF
+        data[6] = (self.crc32 >> 16) & 0xFF
+        data[7] = self.crc32 >> 24
+        id.bit.state_code = 0
+        id.bit.func_code = 0x19
+        id.bit.dev_id = self.deviceID
+        id.bit.scr_id = 0x3f
+        id.bit.index = 0
+        self.Can_Transmit(id.id_frame, data)
 
+    def Iap_Erase(self):
+        id = ID_VALUE()
+        data = [0] * 8
+        id.bit.state_code = 0
+        id.bit.func_code = 0x29
+        id.bit.dev_id = self.deviceID
+        id.bit.scr_id = 0x3f
+        id.bit.index = 0
+        self.Can_Transmit(id.id_frame, data)
+
+    def Iap_SendData(self,bindata: list):
+        id = ID_VALUE()
+        data = list(bindata)
+        id.bit.state_code = 0
+        id.bit.func_code = 0x39
+        id.bit.dev_id = self.deviceID
+        id.bit.scr_id = 0x3f
+        id.bit.index = self.index.value
+        self.Can_Transmit(id.id_frame, data)
+
+    def Iap_Download(self,crc16: int):
+        id = ID_VALUE()
+        data = [0] * 8
+        data[0] = crc16 & 0xFF
+        data[1] = (crc16 >> 8) & 0xFF
+        id.bit.state_code = 0
+        id.bit.func_code = 0x49
+        id.bit.dev_id = self.deviceID
+        id.bit.scr_id = 0x3f
+        id.bit.index = 0
+        self.Can_Transmit(id.id_frame, data)
+
+    def Iap_Done(self):
+        id = ID_VALUE()
+        data = [0] * 8
+        id.bit.state_code = 0
+        id.bit.func_code = 0x59
+        id.bit.dev_id = self.deviceID
+        id.bit.scr_id = 0x3f
+        id.bit.index = 0
+        self.Can_Transmit(id.id_frame, data)
 
     def rcv_Data(self):
         global rx_vci_can_obj,rxlen
-        while True:
-            if self.DeviceOpenSta == 0:
-                break
-            else:
-                ret = canDLL.VCI_Receive(VCI_USBCAN2, self.CanDeviceIndex, self.devicePass_index, byref(rx_vci_can_obj.ADDR), 2500, 0)
-                if ret > 0:#接收到数据
-                    timeStr = Time_get.get_strTime()
-                    for i in range(0,ret):
-                        idstr = " id:"+str(hex(rx_vci_can_obj.STRUCT_ARRAY[i].ID)) + " "
-                        lenstr = "len:" + str(hex(rx_vci_can_obj.STRUCT_ARRAY[i].DataLen)) + " data:"
-                        datastr = ' '.join(f'{byte:02X}' for byte in rx_vci_can_obj.STRUCT_ARRAY[i].Data)
-                        show_str = "[" + timeStr + "]" + "收←◆" + idstr + lenstr + datastr
-                        self.ui_update.update(show_str)
-                # rxlen += ret
-                # print('CAN通道接收数据总数：' + str(rxlen))
+        print('CAN通道接收线程启动')
+        time.sleep(0.001)
+        while self.DeviceOpenSta == 1:
+            ret = canDLL.VCI_Receive(VCI_USBCAN2, self.CanDeviceIndex, self.devicePass_index, byref(rx_vci_can_obj.ADDR), 2500, 0)
+            if ret > 0:#接收到数据
+                timeStr = Time_get.get_strTime()
+                for i in range(0,ret):
+                    if self.Updatathread.is_alive():
+                        rcvID = ID_VALUE()
+                        rcvID.id_frame = int(rx_vci_can_obj.STRUCT_ARRAY[i].ID)
+                        if (rcvID.bit.scr_id == self.deviceID) and (rcvID.bit.dev_id == 0x3F) or (rcvID.bit.func_code & 0x09 == 0x09):
+                            data = [0] * 9
+                            data[0] = int(rcvID.id_frame)
+                            for a in range(8):
+                                data[a+1] = int(rx_vci_can_obj.STRUCT_ARRAY[i].Data[i])
+                            iapRXdata.put(data)
+
+                    idstr = " id:"+str(hex(rx_vci_can_obj.STRUCT_ARRAY[i].ID)) + " "
+                    lenstr = "len:" + str(hex(rx_vci_can_obj.STRUCT_ARRAY[i].DataLen)) + " data:"
+                    datastr = ' '.join(f'{byte:02X}' for byte in rx_vci_can_obj.STRUCT_ARRAY[i].Data)
+                    show_str = "[" + timeStr + "]" + "收←◆" + idstr + lenstr + datastr
+                    self.ui_update.update(show_str)
             time.sleep(0.001)
         
-
-
     def ui_show_refresh (self, data):
         self.CAN_FRAME_SHOWED.append(data)
 
@@ -274,8 +672,9 @@ class CanWindow(QWidget):
                 self.SCAN_USBDEVICE.setEnabled(True)
 
         else:
-            self.DeviceOpenSta = 0          
-            self.rcvDataThread.join()        
+            self.DeviceOpenSta = 0
+            if self.rcvDataThread.is_alive():
+                self.rcvDataThread.join()                 
             self.CanDeviceIndexx = self.CAN_DEVICE_INDEX.currentIndex()
             ret = canDLL.VCI_CloseDevice(VCI_USBCAN2, self.CanDeviceIndexx)
             self.SCAN_USBDEVICE.setEnabled(True)
@@ -283,5 +682,87 @@ class CanWindow(QWidget):
             print("关闭CAN分析仪")
 
         self.OPEN_CAN_DEVICE.setEnabled(True)
+
+    def send_process_count_reflash(self, cnt):
+        self.sendProgress.setValue(cnt)
+
+    def send_process_window(self, ctr):
+        if ctr:
+            self.sendProgress = QProgressDialog(
+                "更新进度", "取消", 0, self.sendProcessCount, self
+            )
+            self.sendProgress.setFixedSize(300, 150)
+            self.sendProgress.setWindowTitle("正在更新")
+            self.sendProgress.show()
+        else:
+            self.sendProgress.close()
+    def err_code_warning(self, index):
+        match index:
+            case can_err_code.DATA_LEN_OVERRANGE_ERR:
+                QMessageBox.warning(
+                    None, "警告", "数据超过1024Bytes! ! !", QMessageBox.Ok
+                )
+                self.errCode = 0
+
+
+            case can_err_code.FILE_NOT_EXIST_ERR:
+                QMessageBox.warning(
+                    None, "警告", "文件不存在或路径错误！！！", QMessageBox.Ok
+                )
+                self.errCode = 0
+
+            case can_err_code.FILE_SIZE_OVERRANGE:
+                QMessageBox.warning(
+                    None, "警告", "文件大小超出限制！！！", QMessageBox.Ok
+                )
+                self.errCode = 0
+
+            case can_err_code.FILE_READ_ERR:
+                QMessageBox.critical(
+                    None, "错误", "文件读取出现错误！！！", QMessageBox.Ok
+                )
+                self.errCode = 0
+
+            case can_err_code.FILE_SEND_ERR:
+                QMessageBox.critical(
+                    None, "错误", "文件发送出现中断,发送失败！！！", QMessageBox.Ok
+                )
+                self.errCode = 0
+
+            case can_err_code.NO_DEVICE_FOUND_ERR:
+                QMessageBox.critical(
+                    None, "错误", "目标设备未响应,中断升级", QMessageBox.Ok
+                )
+                self.errCode = 0
+
+            case can_err_code.DEVICE_RESPOND_TIMEOUT_ERR:
+                QMessageBox.critical(
+                    None, "错误", "目标设备响应超时,中断升级", QMessageBox.Ok
+                )
+                self.errCode = 0
+
+            case can_err_code.DEVICE_FLASH_ERASE_ERR:
+                QMessageBox.critical(None, "错误", "擦除失败,中断升级", QMessageBox.Ok)
+                self.errCode = 0
+
+            case can_err_code.DEVICE_FLASH_WRITE_ERR:
+                QMessageBox.critical(None, "错误", "烧录错误,中断升级", QMessageBox.Ok)
+                self.errCode = 0
+
+            case can_err_code.DEVICE_FLASH_CHECK_ERR:
+                QMessageBox.critical(None, "错误", "校验失败,升级失败", QMessageBox.Ok)
+                self.errCode = 0
+
+            case can_err_code.DEVICE_FLASH_CHECK_SUCCESS:
+                QMessageBox.information(
+                    None, "提示", "固件已完成升级！", QMessageBox.Ok
+                )
+                self.errCode = 0
+
+            case can_err_code.DEVICE_FLASH_CHECK_ERR:
+                QMessageBox.critical(
+                    None, "错误", "设备回应错误,中断升级", QMessageBox.Ok
+                )
+                self.errCode = 0
         
       

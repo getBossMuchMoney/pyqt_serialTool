@@ -192,6 +192,9 @@ class Ui_MainWindow(object):
         self.label_12 = QtWidgets.QLabel(self.tab_2)
         self.label_12.setGeometry(QtCore.QRect(870, 360, 72, 15))
         self.label_12.setObjectName("label_12")
+        self.RESET_CAN_DEVICE = QtWidgets.QPushButton(self.tab_2)
+        self.RESET_CAN_DEVICE.setGeometry(QtCore.QRect(1090, 140, 93, 28))
+        self.RESET_CAN_DEVICE.setObjectName("RESET_CAN_DEVICE")
         self.tabWidget.addTab(self.tab_2, "")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
@@ -203,7 +206,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
 
         self.retranslateUi(MainWindow)
-        self.tabWidget.setCurrentIndex(1)
+        self.tabWidget.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -243,4 +246,5 @@ class Ui_MainWindow(object):
         self.SCAN_USBDEVICE.setText(_translate("MainWindow", "扫描设备"))
         self.BOOT_CMD.setText(_translate("MainWindow", "boot"))
         self.label_12.setText(_translate("MainWindow", "boot命令:"))
+        self.RESET_CAN_DEVICE.setText(_translate("MainWindow", "分析仪复位"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("MainWindow", "can调试"))

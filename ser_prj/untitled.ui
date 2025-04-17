@@ -27,7 +27,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="tab">
      <attribute name="title">
@@ -682,6 +682,19 @@
       </property>
       <property name="text">
        <string>boot命令:</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="RESET_CAN_DEVICE">
+      <property name="geometry">
+       <rect>
+        <x>1090</x>
+        <y>140</y>
+        <width>93</width>
+        <height>28</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>分析仪复位</string>
       </property>
      </widget>
     </widget>
