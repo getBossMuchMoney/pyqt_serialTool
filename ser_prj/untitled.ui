@@ -697,6 +697,19 @@
        <string>分析仪复位</string>
       </property>
      </widget>
+     <widget class="QPushButton" name="CLEAR_DATA">
+      <property name="geometry">
+       <rect>
+        <x>730</x>
+        <y>690</y>
+        <width>93</width>
+        <height>28</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>清空数据</string>
+      </property>
+     </widget>
     </widget>
    </widget>
   </widget>

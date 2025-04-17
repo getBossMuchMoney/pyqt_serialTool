@@ -18,8 +18,6 @@ class Mywindow(QMainWindow):
         # 创建 CanWindow 实例
         self.canDebug = CanWindow(self.MainUI)
 
-
-
 def ui_process():
     QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
     # QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)  # 解决比例问题

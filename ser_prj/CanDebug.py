@@ -154,12 +154,14 @@ class CanWindow(QWidget):
         self.CAN_DEVICE_INDEX = self.ui.CAN_DEVICE_INDEX
         self.SCAN_USBDEVICE = self.ui.SCAN_USBDEVICE
         self.BOOT_CMD = self.ui.BOOT_CMD
+        self.CLEAR_DATA = self.ui.CLEAR_DATA
 
         self.OPEN_CAN_DEVICE.clicked.connect(self.Open_Devive_Click)
         self.SCAN_USBDEVICE.clicked.connect(self.CheckCanDevice)
         self.BOOT_CMD.clicked.connect(self.bootSend)
         self.CHOOSE_FILE_OF_CAN.clicked.connect(self.open_file)
         self.START_CAN_IAP.clicked.connect(self.send_file)
+        self.CLEAR_DATA.clicked.connect(self.clear_data)
 
         self.ui_update = ui_show()
         self.ui_update.update_signal.connect(self.ui_show_refresh)
@@ -285,6 +287,7 @@ class CanWindow(QWidget):
                 break
             except:
                 if i == 2:
+                    self.file_size = 0
                     self.errCode = can_err_code.NO_DEVICE_FOUND_ERR
                     self.canErr.update(self.errCode)
                     self.START_CAN_IAP.setEnabled(True)
@@ -346,31 +349,10 @@ class CanWindow(QWidget):
                 self.index.value = 0
                 for j in range(256):
                     txdata = list(file_data_buf[list_index1:list_index1+8])
-                    list_index1+=8
-                    for k in range(3):
-                        try:
-                            self.Iap_SendData(txdata)
-                            rxbuff = list(iapRXdata.get(timeout=1))
-                            break
-                        except:
-                            if k == 2:
-                                self.errCode = can_err_code.NO_DEVICE_FOUND_ERR
-                                self.canErr.update(self.errCode)
-                                self.START_CAN_IAP.setEnabled(True)
-                                self.send_process_show_start.update(0)
-                                self.openFile.close()
-                                return
-                            else:
-                                continue
-                    rxid.id_frame = int(rxbuff[0])
-                    if rxid.bit.state_code != 0:
-                        self.errCode = can_err_code.DEVICE_NOT_CORRECT_RESPOND_ERR
-                        self.canErr.update(self.errCode)
-                        self.START_CAN_IAP.setEnabled(True)
-                        self.send_process_show_start.update(0)
-                        self.openFile.close()
-                        return
+                    list_index1+=8           
+                    self.Iap_SendData(txdata)
                     self.index.value += 1
+
                 crc16 = calculate_crc16(file_data_buf)
                 for k in range(3):
                     try:
@@ -402,32 +384,13 @@ class CanWindow(QWidget):
                 file_data_buf = list(filebuff[list_index:list_index+left_data_size])
                 list_index1 = 0
                 self.index.value = 0
+
                 for i in range(left_data_size // 8):
                     txdata = list(file_data_buf[list_index1:list_index1+8])
                     list_index1+=8
-                    for k in range(3):
-                        try:
-                            self.Iap_SendData(txdata)
-                            rxbuff = list(iapRXdata.get(timeout=1))
-                            break
-                        except:
-                            if k == 2:
-                                self.errCode = can_err_code.NO_DEVICE_FOUND_ERR
-                                self.canErr.update(self.errCode)
-                                self.START_CAN_IAP.setEnabled(True)
-                                self.send_process_show_start.update(0)
-                                self.openFile.close()
-                                return
-                            else:
-                                continue
-                    rxid.id_frame = int(rxbuff[0])
-                    if rxid.bit.state_code != 0:
-                        self.errCode = can_err_code.DEVICE_NOT_CORRECT_RESPOND_ERR
-                        self.canErr.update(self.errCode)
-                        self.START_CAN_IAP.setEnabled(True)
-                        self.openFile.close()
-                        return
+                    self.Iap_SendData(txdata)
                     self.index.value+=1
+
                 crc16 = calculate_crc16(file_data_buf)
                 for k in range(3):
                     try:
@@ -682,6 +645,9 @@ class CanWindow(QWidget):
             print("关闭CAN分析仪")
 
         self.OPEN_CAN_DEVICE.setEnabled(True)
+
+    def clear_data(self):
+        self.CAN_FRAME_SHOWED.clear()
 
     def send_process_count_reflash(self, cnt):
         self.sendProgress.setValue(cnt)
