@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import *
-from UartDebug import UartWindow
+from UartDebug import UartWindow,usart_process
 import multiprocessing
 from PyQt5.QtCore import Qt, QThread, QCoreApplication
 import sys, os
@@ -17,6 +17,26 @@ class Mywindow(QMainWindow):
 
         # 创建 CanWindow 实例
         self.canDebug = CanWindow(self.MainUI)
+
+    def closeEvent(
+        self, event
+    ):  # 重写closeevent，确保窗口关闭后子进程被销毁不会留下后台
+        reply = QMessageBox.question(
+            self,
+            "调试助手beta版",
+            "是否要退出程序？",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+        if reply == QMessageBox.Yes:
+            if not usart_process == None:
+                usart_process.terminate()  # 变成僵尸进程
+                usart_process.join()  # 进程完全退出
+            event.accept()
+            os._exit(0)
+        else:
+            event.ignore()
+
 
 def ui_process():
     QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)

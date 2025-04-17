@@ -1222,24 +1222,6 @@ class UartWindow(QWidget):
                 )
                 self.errCode = 0
 
-    def closeEvent(
-        self, event
-    ):  # 重写closeevent，确保窗口关闭后子进程被销毁不会留下后台
-        reply = QMessageBox.question(
-            self,
-            "串口助手beta版",
-            "是否要退出程序？",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No,
-        )
-        if reply == QMessageBox.Yes:
-            if not usart_process == None:
-                usart_process.terminate()  # 变成僵尸进程
-                usart_process.join()  # 进程完全退出
-            event.accept()
-            os._exit(0)
-        else:
-            event.ignore()
 
     def com_reflash(self):
         working_com_check = 0
