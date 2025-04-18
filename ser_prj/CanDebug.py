@@ -122,7 +122,7 @@ class CanWindow(QWidget):
         self.deviceID = 0
         self.errCode = 0
         self.index = ctypes.c_uint8(0)
-        self.crc32 = 0
+        self.crc16 = 0
         self.sendProcessCount = 0
         self.file_size = 0
         DevicePass = ["CAN1", "CAN2"]
@@ -268,7 +268,7 @@ class CanWindow(QWidget):
         list_index1 = 0
         self.index.value = 0
         rxbuff = list()
-        self.crc32 = crc32_for_byte_list(filebuff)
+        self.crc16 = calculate_crc16(filebuff)
         data_group = self.file_size // 2048
         left_data_size = self.file_size % 2048
 
@@ -277,7 +277,7 @@ class CanWindow(QWidget):
         else:
             self.sendProcessCount = data_group
 
-        print(self.crc32, data_group, left_data_size)
+        print(self.crc16, data_group, left_data_size)
         self.send_process_show_start.update(1)
 
         for i in range(3):
@@ -500,10 +500,10 @@ class CanWindow(QWidget):
         data[1] = (self.file_size >> 8) & 0xFF
         data[2] = (self.file_size >> 16) & 0xFF
         data[3] = self.file_size >> 24
-        data[4] = self.crc32 & 0xFF
-        data[5] = (self.crc32 >> 8) & 0xFF
-        data[6] = (self.crc32 >> 16) & 0xFF
-        data[7] = self.crc32 >> 24
+        data[4] = self.crc16 & 0xFF
+        data[5] = (self.crc16 >> 8) & 0xFF
+        data[6] = 0
+        data[7] = 0
         id.bit.state_code = 0
         id.bit.func_code = 0x19
         id.bit.dev_id = self.deviceID

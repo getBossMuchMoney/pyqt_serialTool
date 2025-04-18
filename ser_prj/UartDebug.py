@@ -299,7 +299,7 @@ class UartWindow(QWidget):
         self.now_enco_form = "UTF-8"
         self.file_data_buf = list()
         self.file_size = 0
-        self.crc32 = 0
+        self.crc16 = 0
         self.deviceID = 0
         self.index = ctypes.c_uint8(0)
 
@@ -345,6 +345,7 @@ class UartWindow(QWidget):
         self.recHexShow = self.ui.recHexShow
         self.Com_Band = self.ui.Com_Band
         self.Send_Data_Display = self.ui.Send_Data_Display
+        self.BOOT_BUTTON = self.ui.BOOT_BUTTON
 
         self.ClearRecShow.clicked.connect(self.recv_show_clear)
         self.ClearSendShow.clicked.connect(self.send_show_clear)
@@ -356,6 +357,7 @@ class UartWindow(QWidget):
         self.start_update_click.clicked.connect(self.send_file) # type: ignore
         self.subpackageCheck.clicked.connect(self.subpackage_click) # type: ignore
         self.SaveDataCheck.clicked.connect(self.save_data_click) # type: ignore
+        self.BOOT_BUTTON.clicked.connect(self.boot_cmd)
 
         self.ui.sendLength.setText(str(0))
         self.ui.receiveLength.setText(str(0))
@@ -392,6 +394,7 @@ class UartWindow(QWidget):
         # 加载选择设备选项
         for i in range(0, len(DeviceIdList)):
             self.ChosedeviceID.addItem(DeviceIdList[i])
+
 
     def save_data_click(self):
         if self.SaveDataCheck.isChecked():
@@ -501,6 +504,47 @@ class UartWindow(QWidget):
                     self.errCode = com_err_code.FILE_NOT_EXIST_ERR
                     self.comErr.update(self.errCode)
 
+    def boot_cmd(self):
+        send_fail = 0
+        self.txbuff = [0] * 4
+        self.txbuff[0] = ord("s")
+        self.txbuff[1] = ord("t")
+        self.txbuff[2] = ord("o")
+        self.txbuff[3] = ord("p")
+        timeStr = Time_get.get_strTime()
+        tx_data.put(self.txbuff)
+        try:
+            if (
+                usart_process.is_alive() == False
+                or Com_Open_Flag == com_state.CLOSE
+                or send_fail == usart_workState.get(timeout=3)
+            ):  # 等待一帧发送完毕，超时3秒
+                print("发送失败")
+                subPkg_timeout.value = 0
+                self.errCode = com_err_code.FILE_SEND_ERR
+                self.comErr.update(self.errCode)
+                return
+        except:
+            print("发送超时")
+            subPkg_timeout.value = 0
+            self.errCode = com_err_code.FILE_SEND_ERR
+            self.comErr.update(self.errCode)
+            return
+        
+        if self.recHexShow.isChecked():
+            show_str = ' '.join(f'{byte:02X}' for byte in self.txbuff)
+            
+        else:
+
+            show_str = ''.join(chr(i) if 0 <= i <= 127 else '?' for i in self.txbuff)
+
+        show_str = "[" + timeStr + "]" + "发→◇" + show_str + "\n"
+        self.ui_update.update(show_str)
+
+        if self.SaveDataCheck.isChecked() and self.savedatafile != None:
+            self.savedatafile.write(show_str + "\n")
+
+
     def Iap_Req(self):     
         self.txbuff = [0] * 12
         self.txbuff[0] = ord("i")
@@ -511,10 +555,10 @@ class UartWindow(QWidget):
         self.txbuff[5] = (self.file_size >> 8) & 0xFF
         self.txbuff[6] = (self.file_size >> 16) & 0xFF
         self.txbuff[7] = self.file_size >> 24
-        self.txbuff[8] = self.crc32 & 0xFF
-        self.txbuff[9] = (self.crc32 >> 8) & 0xFF
-        self.txbuff[10] = (self.crc32 >> 16) & 0xFF
-        self.txbuff[11] = self.crc32 >> 24
+        self.txbuff[8] = self.crc16 & 0xFF
+        self.txbuff[9] = (self.crc16 >> 8) & 0xFF
+        self.txbuff[10] = 0
+        self.txbuff[11] = 0
         add_crc16_to_list(self.txbuff)
         tx_data.put(self.txbuff)
 
@@ -614,7 +658,7 @@ class UartWindow(QWidget):
         self.index.value = 0
         self.ChosedeviceID.setEnabled(False)
         self.deviceID = self.ChosedeviceID.currentIndex() + 1
-        self.crc32 = crc32_for_byte_list(filebuff)
+        self.crc16 = calculate_crc16(filebuff)
         data_group = self.file_size // 2048
         left_data_size = self.file_size % 2048
         if data_group > 0 and left_data_size > 0:
@@ -623,7 +667,7 @@ class UartWindow(QWidget):
             self.sendProcessCount = 1
         else:
             self.sendProcessCount = data_group
-        print(self.crc32, data_group, left_data_size)
+        print(self.crc16, data_group, left_data_size)
         self.send_process_show_start.update(1)
 
         for i in range(3):

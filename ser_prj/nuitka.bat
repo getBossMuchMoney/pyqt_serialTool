@@ -1,0 +1,1 @@
+python -m nuitka --standalone --enable-plugin=pyqt5 --remove-output main.py 
