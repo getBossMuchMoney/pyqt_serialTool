@@ -271,7 +271,7 @@ def bytesrialtoarray(msg):
 
 class UartWindow(QWidget):
     def __init__(self,ui_main_window):
-        band = ["9600", "19200", "115200", "460800", "2000000"]
+        band = ["9600", "19200", "38400", "57600","115200"]
         DeviceIdList = [
             "主机",
             "从机1",
@@ -346,6 +346,9 @@ class UartWindow(QWidget):
         self.Com_Band = self.ui.Com_Band
         self.Send_Data_Display = self.ui.Send_Data_Display
         self.BOOT_BUTTON = self.ui.BOOT_BUTTON
+        self.CHANG_BAND_LIST = self.ui.CHANG_BAND_LIST
+        self.CONFIG_BAND_BUTTON =  self.ui.CONFIG_BAND_BUTTON
+        self.QUERY_DEVICE_BUTTON = self.ui.QUERY_DEVICE_BUTTON
 
         self.ClearRecShow.clicked.connect(self.recv_show_clear)
         self.ClearSendShow.clicked.connect(self.send_show_clear)
@@ -358,6 +361,8 @@ class UartWindow(QWidget):
         self.subpackageCheck.clicked.connect(self.subpackage_click) # type: ignore
         self.SaveDataCheck.clicked.connect(self.save_data_click) # type: ignore
         self.BOOT_BUTTON.clicked.connect(self.boot_cmd)
+        self.CONFIG_BAND_BUTTON.clicked.connect(self.band_config)
+        self.QUERY_DEVICE_BUTTON.clicked.connect(self.query_device)
 
         self.ui.sendLength.setText(str(0))
         self.ui.receiveLength.setText(str(0))
@@ -390,6 +395,7 @@ class UartWindow(QWidget):
         # 加载串口波特率选项
         for i in range(0, len(band)):
             self.Com_Band.addItem(band[i])
+            self.CHANG_BAND_LIST.addItem(band[i])
 
         # 加载选择设备选项
         for i in range(0, len(DeviceIdList)):
@@ -473,6 +479,7 @@ class UartWindow(QWidget):
             if self.file_size > 0:
                 print(self.file_selected.text())
                 if self.file_selected.text() == self.fname[0]:
+                    self.openFile = open(self.file_selected.text(), "rb")
                     self.send_file_thread = Thread(target=self.send_file_process)
                     self.send_file_thread.start()
                     self.start_update_click.setEnabled(False)
@@ -503,6 +510,86 @@ class UartWindow(QWidget):
                 except:
                     self.errCode = com_err_code.FILE_NOT_EXIST_ERR
                     self.comErr.update(self.errCode)
+
+    def query_device(self):
+        send_fail = 0
+        self.txbuff = [0] * 4
+        self.txbuff[0] = 0xAA
+        self.txbuff[1] = 0xAA
+        self.txbuff[2] = self.ChosedeviceID.currentIndex() + 1
+        add_crc16_to_list(self.txbuff)
+        timeStr = Time_get.get_strTime()
+        tx_data.put(self.txbuff)
+        try:
+            if (
+                usart_process.is_alive() == False
+                or Com_Open_Flag == com_state.CLOSE
+                or send_fail == usart_workState.get(timeout=3)
+            ):  # 等待一帧发送完毕，超时3秒
+                print("发送失败")
+                subPkg_timeout.value = 0
+                self.errCode = com_err_code.FILE_SEND_ERR
+                self.comErr.update(self.errCode)
+                return
+        except:
+            print("发送超时")
+            subPkg_timeout.value = 0
+            self.errCode = com_err_code.FILE_SEND_ERR
+            self.comErr.update(self.errCode)
+            return
+        
+        if self.recHexShow.isChecked():
+            show_str = ' '.join(f'{byte:02X}' for byte in self.txbuff)
+            
+        else:
+
+            show_str = ''.join(chr(i) if 0 <= i <= 127 else '?' for i in self.txbuff)
+
+        show_str = "[" + timeStr + "]" + "发→◇" + show_str + "\n"
+        self.ui_update.update(show_str)
+
+        if self.SaveDataCheck.isChecked() and self.savedatafile != None:
+            self.savedatafile.write(show_str + "\n") 
+
+    def band_config(self):
+        send_fail = 0
+        self.txbuff = [0] * 5
+        self.txbuff[0] = 0x55
+        self.txbuff[1] = 0x55
+        self.txbuff[2] = self.CHANG_BAND_LIST.currentIndex()
+        add_crc16_to_list(self.txbuff)
+        timeStr = Time_get.get_strTime()
+        tx_data.put(self.txbuff)
+        try:
+            if (
+                usart_process.is_alive() == False
+                or Com_Open_Flag == com_state.CLOSE
+                or send_fail == usart_workState.get(timeout=3)
+            ):  # 等待一帧发送完毕，超时3秒
+                print("发送失败")
+                subPkg_timeout.value = 0
+                self.errCode = com_err_code.FILE_SEND_ERR
+                self.comErr.update(self.errCode)
+                return
+        except:
+            print("发送超时")
+            subPkg_timeout.value = 0
+            self.errCode = com_err_code.FILE_SEND_ERR
+            self.comErr.update(self.errCode)
+            return
+        
+        if self.recHexShow.isChecked():
+            show_str = ' '.join(f'{byte:02X}' for byte in self.txbuff)
+            
+        else:
+
+            show_str = ''.join(chr(i) if 0 <= i <= 127 else '?' for i in self.txbuff)
+
+        show_str = "[" + timeStr + "]" + "发→◇" + show_str + "\n"
+        self.ui_update.update(show_str)
+
+        if self.SaveDataCheck.isChecked() and self.savedatafile != None:
+            self.savedatafile.write(show_str + "\n")    
 
     def boot_cmd(self):
         send_fail = 0
@@ -1311,7 +1398,7 @@ class UartWindow(QWidget):
         self.start_update_click.setEnabled(False)
         self.send_auto.setCheckable(
             False
-        )  # 不允许自动发送按钮勾选  每次关闭串口必须禁止
+        )  # 不允许自动发送按钮勾选  每次关闭串口（）必须禁止
         self.Send_Data.setEnabled(False)  # 禁止发送按钮
         serial_cfg.put(com_state.CLOSE)
         self.Com_Band.setEnabled(True)  # 串口号和波特率变为可选择

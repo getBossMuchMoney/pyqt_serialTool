@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1240</width>
-    <height>850</height>
+    <width>1331</width>
+    <height>988</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -22,8 +22,8 @@
      <rect>
       <x>0</x>
       <y>0</y>
-      <width>1271</width>
-      <height>791</height>
+      <width>1331</width>
+      <height>931</height>
      </rect>
     </property>
     <property name="currentIndex">
@@ -115,7 +115,7 @@
       <property name="geometry">
        <rect>
         <x>940</x>
-        <y>300</y>
+        <y>170</y>
         <width>87</width>
         <height>31</height>
        </rect>
@@ -384,7 +384,7 @@
       <property name="geometry">
        <rect>
         <x>861</x>
-        <y>304</y>
+        <y>174</y>
         <width>71</width>
         <height>21</height>
        </rect>
@@ -493,7 +493,7 @@
       <property name="geometry">
        <rect>
         <x>940</x>
-        <y>250</y>
+        <y>310</y>
         <width>93</width>
         <height>28</height>
        </rect>
@@ -506,13 +506,62 @@
       <property name="geometry">
        <rect>
         <x>860</x>
-        <y>260</y>
+        <y>320</y>
         <width>61</width>
         <height>16</height>
        </rect>
       </property>
       <property name="text">
        <string>boot指令</string>
+      </property>
+     </widget>
+     <widget class="QComboBox" name="CHANG_BAND_LIST">
+      <property name="geometry">
+       <rect>
+        <x>940</x>
+        <y>230</y>
+        <width>121</width>
+        <height>31</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_21">
+      <property name="geometry">
+       <rect>
+        <x>860</x>
+        <y>240</y>
+        <width>72</width>
+        <height>15</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>修改波特率</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="CONFIG_BAND_BUTTON">
+      <property name="geometry">
+       <rect>
+        <x>1080</x>
+        <y>230</y>
+        <width>93</width>
+        <height>28</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>配置波特率</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="QUERY_DEVICE_BUTTON">
+      <property name="geometry">
+       <rect>
+        <x>1080</x>
+        <y>280</y>
+        <width>93</width>
+        <height>28</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>查询设备</string>
       </property>
      </widget>
     </widget>
@@ -543,7 +592,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>波特率:</string>
+       <string>波特率</string>
       </property>
      </widget>
      <widget class="QLineEdit" name="CAN_FILE_SHOWED">
@@ -559,14 +608,14 @@
      <widget class="QLabel" name="label_27">
       <property name="geometry">
        <rect>
-        <x>881</x>
+        <x>880</x>
         <y>420</y>
         <width>71</width>
         <height>20</height>
        </rect>
       </property>
       <property name="text">
-       <string>选择设备:</string>
+       <string>选择设备</string>
       </property>
      </widget>
      <widget class="QLabel" name="label_28">
@@ -579,7 +628,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>设备通道:</string>
+       <string>设备通道</string>
       </property>
      </widget>
      <widget class="QComboBox" name="CHOOSE_BOARD_CAN">
@@ -671,7 +720,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>CAN设备序号:</string>
+       <string>CAN设备序号</string>
       </property>
      </widget>
      <widget class="QPushButton" name="SCAN_USBDEVICE">
@@ -710,7 +759,7 @@
        </rect>
       </property>
       <property name="text">
-       <string>boot命令:</string>
+       <string>boot命令</string>
       </property>
      </widget>
      <widget class="QPushButton" name="RESET_CAN_DEVICE">
@@ -739,6 +788,183 @@
        <string>清空数据</string>
       </property>
      </widget>
+     <widget class="QListView" name="listView">
+      <property name="geometry">
+       <rect>
+        <x>860</x>
+        <y>610</y>
+        <width>441</width>
+        <height>281</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_14">
+      <property name="geometry">
+       <rect>
+        <x>860</x>
+        <y>590</y>
+        <width>181</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>boot id换算器(十六进制)</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="BOOT_ID_INDEX">
+      <property name="geometry">
+       <rect>
+        <x>950</x>
+        <y>630</y>
+        <width>113</width>
+        <height>21</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_15">
+      <property name="geometry">
+       <rect>
+        <x>890</x>
+        <y>630</y>
+        <width>72</width>
+        <height>15</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>序列号</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_16">
+      <property name="geometry">
+       <rect>
+        <x>900</x>
+        <y>680</y>
+        <width>31</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>源id</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="BOOT_ID_SID">
+      <property name="geometry">
+       <rect>
+        <x>950</x>
+        <y>680</y>
+        <width>113</width>
+        <height>21</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_17">
+      <property name="geometry">
+       <rect>
+        <x>890</x>
+        <y>730</y>
+        <width>51</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>目标id</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="BOOT_ID_DID">
+      <property name="geometry">
+       <rect>
+        <x>950</x>
+        <y>730</y>
+        <width>113</width>
+        <height>21</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_18">
+      <property name="geometry">
+       <rect>
+        <x>890</x>
+        <y>780</y>
+        <width>51</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>功能码</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="BOOT_ID_FUNCCODE">
+      <property name="geometry">
+       <rect>
+        <x>950</x>
+        <y>780</y>
+        <width>113</width>
+        <height>21</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="BOOT_ID_STACODE">
+      <property name="geometry">
+       <rect>
+        <x>950</x>
+        <y>830</y>
+        <width>113</width>
+        <height>21</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_19">
+      <property name="geometry">
+       <rect>
+        <x>890</x>
+        <y>830</y>
+        <width>51</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>状态码</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_20">
+      <property name="geometry">
+       <rect>
+        <x>1090</x>
+        <y>730</y>
+        <width>51</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>最终id</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="BOOT_ID">
+      <property name="geometry">
+       <rect>
+        <x>1140</x>
+        <y>730</y>
+        <width>113</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="CAL_BOOTID_BUTTON">
+      <property name="geometry">
+       <rect>
+        <x>1140</x>
+        <y>780</y>
+        <width>93</width>
+        <height>28</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>计算id</string>
+      </property>
+     </widget>
     </widget>
    </widget>
   </widget>
@@ -747,7 +973,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1240</width>
+     <width>1331</width>
      <height>26</height>
     </rect>
    </property>

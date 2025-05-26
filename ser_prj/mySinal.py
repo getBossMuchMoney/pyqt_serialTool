@@ -1,5 +1,5 @@
 from PyQt5.QtCore import  pyqtSignal, QObject
-
+from multiprocessing import *
 
 
 # 自定义信号量
@@ -31,3 +31,8 @@ class state_check(QObject):
 
     def update(self):
         self.update_signal.emit()
+
+
+def clearQueue(q:Queue):
+    while q.empty() == False:
+        q.get_nowait()

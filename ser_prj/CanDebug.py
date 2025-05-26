@@ -9,12 +9,13 @@ from crc import *
 from mySinal import *
 import Time_get
 import time
-from multiprocessing import*
+from multiprocessing import *
 from enum import IntEnum
 
-canDLL = windll.LoadLibrary('./ControlCAN.dll') 
+canDLL = windll.LoadLibrary("./ControlCAN.dll")
 VCI_USBCAN2 = 4
 iapRXdata = Queue()
+
 
 class can_err_code(IntEnum):
     DATA_LEN_OVERRANGE_ERR = 5
@@ -31,67 +32,79 @@ class can_err_code(IntEnum):
     DEVICE_NOT_CORRECT_RESPOND_ERR = 16
 
 
-
 class ID_BIT(Structure):
-    _fields_ = [("state_code", c_uint, 2),
-                ("func_code", c_uint, 7),
-                ("dev_id", c_uint, 6),
-                ("scr_id", c_uint, 6),
-                ("index", c_uint, 8),
-               ]
-    
+    _fields_ = [
+        ("state_code", c_uint, 2),
+        ("func_code", c_uint, 7),
+        ("dev_id", c_uint, 6),
+        ("scr_id", c_uint, 6),
+        ("index", c_uint, 8),
+    ]
+
+
 class ID_VALUE(Union):
-    _fields_ = [("bit",ID_BIT),
-                ("id_frame", c_uint),
-               ]
+    _fields_ = [
+        ("bit", ID_BIT),
+        ("id_frame", c_uint),
+    ]
 
 
+class VCI_BOARD_INFO(Structure):
+    _fields_ = [
+        ("hw_Version", c_ushort),
+        ("fw_Version", c_ushort),
+        ("dr_Version", c_ushort),
+        ("in_Version", c_ushort),
+        ("irq_Num", c_ushort),
+        ("can_Num", c_ubyte),
+        ("str_Serial_Num", c_ubyte * 20),
+        ("str_hw_Type", c_ubyte * 40),
+        ("Reserved", c_ubyte * 4),
+    ]
 
-class VCI_BOARD_INFO(Structure):  
-    _fields_ = [("hw_Version", c_ushort),
-                ("fw_Version", c_ushort),
-                ("dr_Version", c_ushort),
-                ("in_Version", c_ushort),
-                ("irq_Num", c_ushort),
-                ("can_Num", c_ubyte),
-                ("str_Serial_Num", c_ubyte * 20),
-                ("str_hw_Type", c_ubyte * 40),
-                ("Reserved", c_ubyte * 4),
-                ]
 
-class VCI_INIT_CONFIG(Structure):  
-    _fields_ = [("AccCode", c_uint),
-                ("AccMask", c_uint),
-                ("Reserved", c_uint),
-                ("Filter", c_ubyte),
-                ("Timing0", c_ubyte),
-                ("Timing1", c_ubyte),
-                ("Mode", c_ubyte)
-                ]
-      
-class VCI_CAN_OBJ(Structure):  
-    _fields_ = [("ID", c_uint),
-                ("TimeStamp", c_uint),
-                ("TimeFlag", c_ubyte),
-                ("SendType", c_ubyte),
-                ("RemoteFlag", c_ubyte),
-                ("ExternFlag", c_ubyte),
-                ("DataLen", c_ubyte),
-                ("Data", c_ubyte*8),
-                ("Reserved", c_ubyte*3)
-                ] 
-    
+class VCI_INIT_CONFIG(Structure):
+    _fields_ = [
+        ("AccCode", c_uint),
+        ("AccMask", c_uint),
+        ("Reserved", c_uint),
+        ("Filter", c_ubyte),
+        ("Timing0", c_ubyte),
+        ("Timing1", c_ubyte),
+        ("Mode", c_ubyte),
+    ]
+
+
+class VCI_CAN_OBJ(Structure):
+    _fields_ = [
+        ("ID", c_uint),
+        ("TimeStamp", c_uint),
+        ("TimeFlag", c_ubyte),
+        ("SendType", c_ubyte),
+        ("RemoteFlag", c_ubyte),
+        ("ExternFlag", c_ubyte),
+        ("DataLen", c_ubyte),
+        ("Data", c_ubyte * 8),
+        ("Reserved", c_ubyte * 3),
+    ]
+
 
 class VCI_CAN_OBJ_ARRAY(Structure):
-    _fields_ = [('SIZE', ctypes.c_uint16), ('STRUCT_ARRAY', ctypes.POINTER(VCI_CAN_OBJ))]
+    _fields_ = [
+        ("SIZE", ctypes.c_uint16),
+        ("STRUCT_ARRAY", ctypes.POINTER(VCI_CAN_OBJ)),
+    ]
 
-    def __init__(self,num_of_structs):
-                                                                 #这个括号不能少
-        self.STRUCT_ARRAY = ctypes.cast((VCI_CAN_OBJ * num_of_structs)(),ctypes.POINTER(VCI_CAN_OBJ))#结构体数组
-        self.SIZE = num_of_structs#结构体长度
-        self.ADDR = self.STRUCT_ARRAY[0]#结构体数组地址  byref()转c地址
-    
-rx_vci_can_obj = VCI_CAN_OBJ_ARRAY(2500)#结构体数组    
+    def __init__(self, num_of_structs):
+        # 这个括号不能少
+        self.STRUCT_ARRAY = ctypes.cast(
+            (VCI_CAN_OBJ * num_of_structs)(), ctypes.POINTER(VCI_CAN_OBJ)
+        )  # 结构体数组
+        self.SIZE = num_of_structs  # 结构体长度
+        self.ADDR = self.STRUCT_ARRAY[0]  # 结构体数组地址  byref()转c地址
+
+
+rx_vci_can_obj = VCI_CAN_OBJ_ARRAY(2500)  # 结构体数组
 rxlen = 0
 
 DeviceInfoArray = (VCI_BOARD_INFO * 5)()
@@ -99,21 +112,29 @@ DeviceInfoArray = (VCI_BOARD_INFO * 5)()
 # 定义函数签名
 canDLL.VCI_FindUsbDevice2.argtypes = [POINTER(VCI_BOARD_INFO)]
 canDLL.VCI_FindUsbDevice2.restype = c_uint
-canDLL.VCI_UsbDeviceReset.argtypes = [c_uint,c_uint,c_uint]
+canDLL.VCI_UsbDeviceReset.argtypes = [c_uint, c_uint, c_uint]
 canDLL.VCI_UsbDeviceReset.restype = c_int
-canDLL.VCI_CloseDevice.argtypes = [c_uint,c_uint]
+canDLL.VCI_CloseDevice.argtypes = [c_uint, c_uint]
 canDLL.VCI_CloseDevice.restype = c_int
-canDLL.VCI_InitCAN.argtypes = [c_uint,c_uint,c_uint,POINTER(VCI_INIT_CONFIG)]
+canDLL.VCI_InitCAN.argtypes = [c_uint, c_uint, c_uint, POINTER(VCI_INIT_CONFIG)]
 canDLL.VCI_InitCAN.restype = c_int
-canDLL.VCI_StartCAN.argtypes = [c_uint,c_uint,c_uint]
+canDLL.VCI_StartCAN.argtypes = [c_uint, c_uint, c_uint]
 canDLL.VCI_StartCAN.restype = c_int
-canDLL.VCI_Transmit.argtypes = [c_uint,c_uint,c_uint,POINTER(VCI_CAN_OBJ),c_uint]
+canDLL.VCI_Transmit.argtypes = [c_uint, c_uint, c_uint, POINTER(VCI_CAN_OBJ), c_uint]
 canDLL.VCI_Transmit.restype = c_int
-canDLL.VCI_Receive.argtypes = [c_uint,c_uint,c_uint,POINTER(VCI_CAN_OBJ),c_uint,c_uint]
+canDLL.VCI_Receive.argtypes = [
+    c_uint,
+    c_uint,
+    c_uint,
+    POINTER(VCI_CAN_OBJ),
+    c_uint,
+    c_uint,
+]
 canDLL.VCI_Receive.restype = c_int
 
+
 class CanWindow(QWidget):
-    def __init__(self,ui_main_window):
+    def __init__(self, ui_main_window):
         self.CanDeviceIndex = 0
         self.devicePass_index = 0
         self.CanDeviceNum = 0
@@ -126,7 +147,7 @@ class CanWindow(QWidget):
         self.sendProcessCount = 0
         self.file_size = 0
         DevicePass = ["CAN1", "CAN2"]
-        self.DeviceTimming = [[0x03,0x1C],[0x01,0x1C],[0x00,0x1C],[0x00,0x14]]
+        self.DeviceTimming = [[0x03, 0x1C], [0x01, 0x1C], [0x00, 0x1C], [0x00, 0x14]]
         Band = ["125kbit", "250kbit", "500kbit", "1Mbit"]
         DeviceIdList = [
             "主机",
@@ -155,6 +176,7 @@ class CanWindow(QWidget):
         self.SCAN_USBDEVICE = self.ui.SCAN_USBDEVICE
         self.BOOT_CMD = self.ui.BOOT_CMD
         self.CLEAR_DATA = self.ui.CLEAR_DATA
+        self.RESET_CAN_DEVICE = self.ui.RESET_CAN_DEVICE
 
         self.OPEN_CAN_DEVICE.clicked.connect(self.Open_Devive_Click)
         self.SCAN_USBDEVICE.clicked.connect(self.CheckCanDevice)
@@ -162,6 +184,7 @@ class CanWindow(QWidget):
         self.CHOOSE_FILE_OF_CAN.clicked.connect(self.open_file)
         self.START_CAN_IAP.clicked.connect(self.send_file)
         self.CLEAR_DATA.clicked.connect(self.clear_data)
+        self.RESET_CAN_DEVICE.clicked.connect(self.reset_can_device)
 
         self.ui_update = ui_show()
         self.ui_update.update_signal.connect(self.ui_show_refresh)
@@ -183,7 +206,6 @@ class CanWindow(QWidget):
 
         self.CheckCanDevice()
 
-
         # 加载通道选项
         for i in range(0, len(DevicePass)):
             self.CAN_DEVIEC_PASS.addItem(DevicePass[i])
@@ -196,11 +218,10 @@ class CanWindow(QWidget):
         for i in range(0, len(DeviceIdList)):
             self.CHOOSE_BOARD_CAN.addItem(DeviceIdList[i])
 
-    
     def open_file(self):
         if not self.Updatathread.is_alive():
             self.fname = QFileDialog.getOpenFileName(
-                self, "打开文件", "/",filter='*.bin'
+                self, "打开文件", "/", filter="*.bin"
             )  # filter='*.txt',此参数指定文件类型
 
             if self.fname[0]:
@@ -217,7 +238,7 @@ class CanWindow(QWidget):
                 except:
                     return
             else:
-                self.file_size = 0  
+                self.file_size = 0
 
     def send_file(self):
         if not self.Updatathread.is_alive():
@@ -253,8 +274,7 @@ class CanWindow(QWidget):
                     self.errCode = can_err_code.FILE_NOT_EXIST_ERR
                     self.canErr.update(self.errCode)
 
-
-    def Updateprocess(self):    
+    def Updateprocess(self):
         self.txbuff = list()
         filebuff = list(self.openFile.read(self.file_size))
         k = self.file_size % 16
@@ -279,7 +299,8 @@ class CanWindow(QWidget):
 
         print(self.crc16, data_group, left_data_size)
         self.send_process_show_start.update(1)
-
+        clearQueue(iapRXdata)
+             
         for i in range(3):
             try:
                 self.bootSend()
@@ -338,18 +359,17 @@ class CanWindow(QWidget):
             self.send_process_show_start.update(0)
             self.openFile.close()
             return
-        
 
         rxid.id_frame = int(rxbuff[0])
         if rxid.bit.state_code == 0:
             for group_index in range(data_group):
-                file_data_buf = list(filebuff[list_index:list_index+2048])
-                list_index+=2048
+                file_data_buf = list(filebuff[list_index : list_index + 2048])
+                list_index += 2048
                 list_index1 = 0
                 self.index.value = 0
                 for j in range(256):
-                    txdata = list(file_data_buf[list_index1:list_index1+8])
-                    list_index1+=8           
+                    txdata = list(file_data_buf[list_index1 : list_index1 + 8])
+                    list_index1 += 8
                     self.Iap_SendData(txdata)
                     self.index.value += 1
 
@@ -377,19 +397,19 @@ class CanWindow(QWidget):
                     self.send_process_show_start.update(0)
                     self.openFile.close()
                     return
-                
+
                 self.send_process_count_update.update(group_index + 1)
 
             if left_data_size > 0:
-                file_data_buf = list(filebuff[list_index:list_index+left_data_size])
+                file_data_buf = list(filebuff[list_index : list_index + left_data_size])
                 list_index1 = 0
                 self.index.value = 0
 
                 for i in range(left_data_size // 8):
-                    txdata = list(file_data_buf[list_index1:list_index1+8])
-                    list_index1+=8
+                    txdata = list(file_data_buf[list_index1 : list_index1 + 8])
+                    list_index1 += 8
                     self.Iap_SendData(txdata)
-                    self.index.value+=1
+                    self.index.value += 1
 
                 crc16 = calculate_crc16(file_data_buf)
                 for k in range(3):
@@ -451,45 +471,49 @@ class CanWindow(QWidget):
 
         self.START_CAN_IAP.setEnabled(True)
 
-
-
     def CheckCanDevice(self):
-        global DeviceInfoArray          
-        Num = canDLL.VCI_FindUsbDevice2(DeviceInfoArray)                     
-        if self.CanDeviceNum !=  Num:
+        global DeviceInfoArray
+        Num = canDLL.VCI_FindUsbDevice2(DeviceInfoArray)
+        if self.CanDeviceNum != Num:
             self.CanDeviceNum = Num
-            self.CAN_DEVICE_INDEX.clear()                  
+            self.CAN_DEVICE_INDEX.clear()
             for i in range(Num):
-                self.CAN_DEVICE_INDEX.addItem(str(i))    
-    
-    def Can_Transmit(self,devid,data:list):
-        ubyte_array = c_ubyte*8
-        a = ubyte_array(0,0,0,0,0,0,0,0)
+                self.CAN_DEVICE_INDEX.addItem(str(i))
+
+    def Can_Transmit(self, devid, data: list):
+        ubyte_array = c_ubyte * 8
+        a = ubyte_array(0, 0, 0, 0, 0, 0, 0, 0)
         for i in range(8):
             a[i] = data[i]
-        ubyte_3array = c_ubyte*3
-        b = ubyte_3array(0, 0 , 0)
-        vci_can_obj = VCI_CAN_OBJ(devid, 0, 0, 0, 0, 1, 8, a, b)#扩展帧正常发送
+        ubyte_3array = c_ubyte * 3
+        b = ubyte_3array(0, 0, 0)
+        vci_can_obj = VCI_CAN_OBJ(devid, 0, 0, 0, 0, 1, 8, a, b)  # 扩展帧正常发送
         timeStr = Time_get.get_strTime()
-        ret = canDLL.VCI_Transmit(VCI_USBCAN2, self.CanDeviceIndex, self.devicePass_index, byref(vci_can_obj), 1)
+        ret = canDLL.VCI_Transmit(
+            VCI_USBCAN2,
+            self.CanDeviceIndex,
+            self.devicePass_index,
+            byref(vci_can_obj),
+            1,
+        )
         if ret == 1:
-            idstr = " id:"+str(hex(devid)) + " "
+            idstr = " id:" + str(hex(devid)) + " "
             lenstr = "len:" + str(hex(8)) + " data:"
-            datastr = ' '.join(f'{byte:02X}' for byte in a)
+            datastr = " ".join(f"{byte:02X}" for byte in a)
             show_str = "[" + timeStr + "]" + "发→◇" + idstr + lenstr + datastr
             self.ui_update.update(show_str)
-            print('CAN发送成功\r\n')
-        if ret != 1:
-            print('CAN发送失败\r\n')
+            print("CAN发送成功\r\n")
+        else:
+            print("CAN发送失败\r\n")
         return ret
-    
+
     def bootSend(self):
         id = ID_VALUE()
         data = [0] * 8
         id.bit.state_code = 0
         id.bit.func_code = 0x09
         id.bit.dev_id = 0x00
-        id.bit.scr_id = 0x3f
+        id.bit.scr_id = 0x3F
         id.bit.index = 0
         self.Can_Transmit(id.id_frame, data)
 
@@ -507,7 +531,7 @@ class CanWindow(QWidget):
         id.bit.state_code = 0
         id.bit.func_code = 0x19
         id.bit.dev_id = self.deviceID
-        id.bit.scr_id = 0x3f
+        id.bit.scr_id = 0x3F
         id.bit.index = 0
         self.Can_Transmit(id.id_frame, data)
 
@@ -517,21 +541,21 @@ class CanWindow(QWidget):
         id.bit.state_code = 0
         id.bit.func_code = 0x29
         id.bit.dev_id = self.deviceID
-        id.bit.scr_id = 0x3f
+        id.bit.scr_id = 0x3F
         id.bit.index = 0
         self.Can_Transmit(id.id_frame, data)
 
-    def Iap_SendData(self,bindata: list):
+    def Iap_SendData(self, bindata: list):
         id = ID_VALUE()
         data = list(bindata)
         id.bit.state_code = 0
         id.bit.func_code = 0x39
         id.bit.dev_id = self.deviceID
-        id.bit.scr_id = 0x3f
+        id.bit.scr_id = 0x3F
         id.bit.index = self.index.value
         self.Can_Transmit(id.id_frame, data)
 
-    def Iap_Download(self,crc16: int):
+    def Iap_Download(self, crc16: int):
         id = ID_VALUE()
         data = [0] * 8
         data[0] = crc16 & 0xFF
@@ -539,7 +563,7 @@ class CanWindow(QWidget):
         id.bit.state_code = 0
         id.bit.func_code = 0x49
         id.bit.dev_id = self.deviceID
-        id.bit.scr_id = 0x3f
+        id.bit.scr_id = 0x3F
         id.bit.index = 0
         self.Can_Transmit(id.id_frame, data)
 
@@ -549,37 +573,56 @@ class CanWindow(QWidget):
         id.bit.state_code = 0
         id.bit.func_code = 0x59
         id.bit.dev_id = self.deviceID
-        id.bit.scr_id = 0x3f
+        id.bit.scr_id = 0x3F
         id.bit.index = 0
         self.Can_Transmit(id.id_frame, data)
 
     def rcv_Data(self):
-        global rx_vci_can_obj,rxlen
-        print('CAN通道接收线程启动')
+        global rx_vci_can_obj, rxlen
+        print("CAN通道接收线程启动")
         time.sleep(0.001)
         while self.DeviceOpenSta == 1:
-            ret = canDLL.VCI_Receive(VCI_USBCAN2, self.CanDeviceIndex, self.devicePass_index, byref(rx_vci_can_obj.ADDR), 2500, 0)
-            if ret > 0:#接收到数据
+            ret = canDLL.VCI_Receive(
+                VCI_USBCAN2,
+                self.CanDeviceIndex,
+                self.devicePass_index,
+                byref(rx_vci_can_obj.ADDR),
+                2500,
+                0,
+            )
+            if ret > 0:  # 接收到数据
                 timeStr = Time_get.get_strTime()
-                for i in range(0,ret):
+                for i in range(0, ret):
                     if self.Updatathread.is_alive():
                         rcvID = ID_VALUE()
                         rcvID.id_frame = int(rx_vci_can_obj.STRUCT_ARRAY[i].ID)
-                        if (rcvID.bit.scr_id == self.deviceID) and (rcvID.bit.dev_id == 0x3F) or (rcvID.bit.func_code & 0x09 == 0x09):
+                        if (
+                            (rcvID.bit.scr_id == self.deviceID)
+                            and (rcvID.bit.dev_id == 0x3F)
+                            or (rcvID.bit.func_code & 0x09 == 0x09)
+                        ):
                             data = [0] * 9
                             data[0] = int(rcvID.id_frame)
                             for a in range(8):
-                                data[a+1] = int(rx_vci_can_obj.STRUCT_ARRAY[i].Data[i])
+                                data[a + 1] = int(
+                                    rx_vci_can_obj.STRUCT_ARRAY[i].Data[i]
+                                )
                             iapRXdata.put(data)
 
-                    idstr = " id:"+str(hex(rx_vci_can_obj.STRUCT_ARRAY[i].ID)) + " "
-                    lenstr = "len:" + str(hex(rx_vci_can_obj.STRUCT_ARRAY[i].DataLen)) + " data:"
-                    datastr = ' '.join(f'{byte:02X}' for byte in rx_vci_can_obj.STRUCT_ARRAY[i].Data)
+                    idstr = " id:" + str(hex(rx_vci_can_obj.STRUCT_ARRAY[i].ID)) + " "
+                    lenstr = (
+                        "len:"
+                        + str(hex(rx_vci_can_obj.STRUCT_ARRAY[i].DataLen))
+                        + " data:"
+                    )
+                    datastr = " ".join(
+                        f"{byte:02X}" for byte in rx_vci_can_obj.STRUCT_ARRAY[i].Data
+                    )
                     show_str = "[" + timeStr + "]" + "收←◆" + idstr + lenstr + datastr
                     self.ui_update.update(show_str)
             time.sleep(0.001)
-        
-    def ui_show_refresh (self, data):
+
+    def ui_show_refresh(self, data):
         self.CAN_FRAME_SHOWED.append(data)
 
     def Open_Devive_Click(self):
@@ -588,12 +631,26 @@ class CanWindow(QWidget):
             self.CanCtrlThread = Thread(target=self.ctrl_CanDevice)
             self.CanCtrlThread.start()
 
+    def reset_can_device(self):
+        self.DeviceOpenSta = 0
+        if self.rcvDataThread.is_alive():
+            self.rcvDataThread.join()
+        clearQueue(iapRXdata)     
+        self.SCAN_USBDEVICE.setEnabled(True)
+        self.OPEN_CAN_DEVICE.setText("打开CAN分析仪")
+        self.OPEN_CAN_DEVICE.setEnabled(True)
+        if self.CAN_DEVICE_INDEX.count() > 0:
+            canDLL.VCI_UsbDeviceReset(VCI_USBCAN2, self.CAN_DEVICE_INDEX.currentIndex(), 0)
+
+
     def ctrl_CanDevice(self):
         global VCI_USBCAN2
-        if self.OPEN_CAN_DEVICE.text() == "打开CAN分析仪" and self.CAN_DEVICE_INDEX.count() > 0:
+        if (
+            self.OPEN_CAN_DEVICE.text() == "打开CAN分析仪"
+            and self.CAN_DEVICE_INDEX.count() > 0
+        ):
             self.SCAN_USBDEVICE.setEnabled(False)
-            self.CanDeviceIndexx = self.CAN_DEVICE_INDEX.currentIndex()        
-            ret = canDLL.VCI_UsbDeviceReset(VCI_USBCAN2, self.CanDeviceIndexx,0)       
+            self.CanDeviceIndexx = self.CAN_DEVICE_INDEX.currentIndex()
             ret = canDLL.VCI_OpenDevice(VCI_USBCAN2, self.CanDeviceIndexx, 0)
 
             if ret == 0:
@@ -602,16 +659,25 @@ class CanWindow(QWidget):
                 self.SCAN_USBDEVICE.setEnabled(True)
             elif ret == 1:
                 band_index = self.CAN_BAND.currentIndex()
-                band_timming =  self.DeviceTimming[band_index]
-                vci_initconfig = VCI_INIT_CONFIG(0x80000008, 0xFFFFFFFF, 0, 3, band_timming[0], band_timming[1], 0)#正常模式,只接收扩展帧
+                band_timming = self.DeviceTimming[band_index]
+                vci_initconfig = VCI_INIT_CONFIG(
+                    0x80000008, 0xFFFFFFFF, 0, 3, band_timming[0], band_timming[1], 0
+                )  # 正常模式,只接收扩展帧
                 self.devicePass_index = self.CAN_DEVIEC_PASS.currentIndex()
-                ret = canDLL.VCI_InitCAN(VCI_USBCAN2, self.CanDeviceIndexx, self.devicePass_index, ctypes.byref(vci_initconfig))
+                ret = canDLL.VCI_InitCAN(
+                    VCI_USBCAN2,
+                    self.CanDeviceIndexx,
+                    self.devicePass_index,
+                    ctypes.byref(vci_initconfig),
+                )
                 if ret == 0:
                     print("分析仪初始化错误")
                     ret = canDLL.VCI_CloseDevice(VCI_USBCAN2, self.CanDeviceIndexx)
                     self.SCAN_USBDEVICE.setEnabled(True)
                 elif ret == 1:
-                    ret = canDLL.VCI_StartCAN(VCI_USBCAN2, self.CanDeviceIndexx, self.devicePass_index)
+                    ret = canDLL.VCI_StartCAN(
+                        VCI_USBCAN2, self.CanDeviceIndexx, self.devicePass_index
+                    )
                     if ret == 0:
                         print("启动CAN通道失败")
                         ret = canDLL.VCI_CloseDevice(VCI_USBCAN2, self.CanDeviceIndexx)
@@ -629,7 +695,7 @@ class CanWindow(QWidget):
                 else:
                     print("CAN分析仪掉线")
                     self.SCAN_USBDEVICE.setEnabled(True)
-           
+
             else:
                 print("CAN分析仪掉线")
                 self.SCAN_USBDEVICE.setEnabled(True)
@@ -637,7 +703,8 @@ class CanWindow(QWidget):
         else:
             self.DeviceOpenSta = 0
             if self.rcvDataThread.is_alive():
-                self.rcvDataThread.join()                 
+                self.rcvDataThread.join()
+            clearQueue(iapRXdata)    
             self.CanDeviceIndexx = self.CAN_DEVICE_INDEX.currentIndex()
             ret = canDLL.VCI_CloseDevice(VCI_USBCAN2, self.CanDeviceIndexx)
             self.SCAN_USBDEVICE.setEnabled(True)
@@ -662,6 +729,7 @@ class CanWindow(QWidget):
             self.sendProgress.show()
         else:
             self.sendProgress.close()
+
     def err_code_warning(self, index):
         match index:
             case can_err_code.DATA_LEN_OVERRANGE_ERR:
@@ -669,7 +737,6 @@ class CanWindow(QWidget):
                     None, "警告", "数据超过1024Bytes! ! !", QMessageBox.Ok
                 )
                 self.errCode = 0
-
 
             case can_err_code.FILE_NOT_EXIST_ERR:
                 QMessageBox.warning(
@@ -730,5 +797,3 @@ class CanWindow(QWidget):
                     None, "错误", "设备回应错误,中断升级", QMessageBox.Ok
                 )
                 self.errCode = 0
-        
-      
