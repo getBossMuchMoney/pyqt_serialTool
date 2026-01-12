@@ -114,6 +114,8 @@ canDLL.VCI_FindUsbDevice2.argtypes = [POINTER(VCI_BOARD_INFO)]
 canDLL.VCI_FindUsbDevice2.restype = c_uint
 canDLL.VCI_UsbDeviceReset.argtypes = [c_uint, c_uint, c_uint]
 canDLL.VCI_UsbDeviceReset.restype = c_int
+canDLL.VCI_OpenDevice.argtypes = [c_uint, c_uint,c_uint]
+canDLL.VCI_OpenDevice.restype = c_int
 canDLL.VCI_CloseDevice.argtypes = [c_uint, c_uint]
 canDLL.VCI_CloseDevice.restype = c_int
 canDLL.VCI_InitCAN.argtypes = [c_uint, c_uint, c_uint, POINTER(VCI_INIT_CONFIG)]
@@ -142,7 +144,7 @@ class CanWindow(QWidget):
         self.DeviceOpenSta = 0
         self.deviceID = 0
         self.errCode = 0
-        self.index = ctypes.c_uint8(0)
+        self.index = 0
         self.crc16 = 0
         self.sendProcessCount = 0
         self.file_size = 0
@@ -242,7 +244,11 @@ class CanWindow(QWidget):
 
     def send_file(self):
         if not self.Updatathread.is_alive():
-            self.deviceID = self.CHOOSE_BOARD_CAN.currentIndex() + 1
+            if self.CHOOSE_BOARD_CAN.currentIndex() == 0:
+                self.deviceID = 1
+            else:
+                self.deviceID = self.CHOOSE_BOARD_CAN.currentIndex() + 0x10 - 1
+
             if self.file_size > 0:
                 print(self.CAN_FILE_SHOWED.text())
                 if self.CAN_FILE_SHOWED.text() == self.fname[0]:
@@ -275,6 +281,7 @@ class CanWindow(QWidget):
                     self.canErr.update(self.errCode)
 
     def Updateprocess(self):
+        time.sleep(0.001)
         self.txbuff = list()
         filebuff = list(self.openFile.read(self.file_size))
         k = self.file_size % 16
@@ -286,7 +293,7 @@ class CanWindow(QWidget):
         group_index = 0
         list_index = 0
         list_index1 = 0
-        self.index.value = 0
+        self.index = 0
         rxbuff = list()
         self.crc16 = calculate_crc16(filebuff)
         data_group = self.file_size // 2048
@@ -366,12 +373,13 @@ class CanWindow(QWidget):
                 file_data_buf = list(filebuff[list_index : list_index + 2048])
                 list_index += 2048
                 list_index1 = 0
-                self.index.value = 0
+                self.index = 0
+   
                 for j in range(256):
                     txdata = list(file_data_buf[list_index1 : list_index1 + 8])
                     list_index1 += 8
                     self.Iap_SendData(txdata)
-                    self.index.value += 1
+                    self.index += 1               
 
                 crc16 = calculate_crc16(file_data_buf)
                 for k in range(3):
@@ -403,13 +411,13 @@ class CanWindow(QWidget):
             if left_data_size > 0:
                 file_data_buf = list(filebuff[list_index : list_index + left_data_size])
                 list_index1 = 0
-                self.index.value = 0
+                self.index = 0
 
                 for i in range(left_data_size // 8):
                     txdata = list(file_data_buf[list_index1 : list_index1 + 8])
                     list_index1 += 8
                     self.Iap_SendData(txdata)
-                    self.index.value += 1
+                    self.index += 1
 
                 crc16 = calculate_crc16(file_data_buf)
                 for k in range(3):
@@ -470,6 +478,7 @@ class CanWindow(QWidget):
             return
 
         self.START_CAN_IAP.setEnabled(True)
+        print("线程结束")
 
     def CheckCanDevice(self):
         global DeviceInfoArray
@@ -552,7 +561,7 @@ class CanWindow(QWidget):
         id.bit.func_code = 0x39
         id.bit.dev_id = self.deviceID
         id.bit.scr_id = 0x3F
-        id.bit.index = self.index.value
+        id.bit.index = self.index
         self.Can_Transmit(id.id_frame, data)
 
     def Iap_Download(self, crc16: int):
@@ -644,6 +653,7 @@ class CanWindow(QWidget):
 
 
     def ctrl_CanDevice(self):
+        time.sleep(0.001)
         global VCI_USBCAN2
         if (
             self.OPEN_CAN_DEVICE.text() == "打开CAN分析仪"
@@ -795,5 +805,11 @@ class CanWindow(QWidget):
             case can_err_code.DEVICE_FLASH_CHECK_ERR:
                 QMessageBox.critical(
                     None, "错误", "设备回应错误,中断升级", QMessageBox.Ok
+                )
+                self.errCode = 0
+
+            case can_err_code.DEVICE_NOT_CORRECT_RESPOND_ERR:
+                QMessageBox.critical(
+                    None, "错误", "数据错误,中断升级", QMessageBox.Ok
                 )
                 self.errCode = 0

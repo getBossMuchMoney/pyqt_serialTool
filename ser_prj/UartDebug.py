@@ -284,6 +284,8 @@ class UartWindow(QWidget):
             "从机8",
             "从机9",
             "从机10",
+            "从机11",
+            "从机12",
         ]
         self.errCode = 0
         self.send_len = 0
@@ -516,7 +518,10 @@ class UartWindow(QWidget):
         self.txbuff = [0] * 4
         self.txbuff[0] = 0xAA
         self.txbuff[1] = 0xAA
-        self.txbuff[2] = self.ChosedeviceID.currentIndex() + 1
+        if self.ChosedeviceID.currentIndex() == 0:
+            self.txbuff[2] = 1
+        else:
+            self.txbuff[2] = self.ChosedeviceID.currentIndex() + 0x10 - 1
         add_crc16_to_list(self.txbuff)
         timeStr = Time_get.get_strTime()
         tx_data.put(self.txbuff)
@@ -744,7 +749,12 @@ class UartWindow(QWidget):
         subPkg_timeout.value = 20
         self.index.value = 0
         self.ChosedeviceID.setEnabled(False)
-        self.deviceID = self.ChosedeviceID.currentIndex() + 1
+        
+        if self.ChosedeviceID.currentIndex() == 0:
+            self.deviceID = 1
+        else:
+            self.deviceID = self.ChosedeviceID.currentIndex() + 0x10 - 1
+
         self.crc16 = calculate_crc16(filebuff)
         data_group = self.file_size // 2048
         left_data_size = self.file_size % 2048
